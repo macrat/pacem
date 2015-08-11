@@ -128,7 +128,7 @@ function guiInit(){
 		$("#openmenu").animate({ opacity: 0 });
 		$("#sidemenu").animate({ left: 0 });
 	});
-	$("#closemenu").click(function(){
+	$("#closemenu, #putbeacon, #putcancel, #removebeacon, canvas").click(function(){
 		$("#openmenu").animate({ opacity: 1 });
 		$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
 	});
@@ -141,21 +141,19 @@ function guiInit(){
 		$("#putbeacon").fadeOut("slow");
 		$("#putcancel").fadeIn("slow");
 	});
-	function cancel(){
+	$("#putcancel, #sidemenu, #openmenu, canvas").click(function(){
 		$("#beaconmenu").animate({
 			height: 0,
 			opacity: 0
 		});
 		$("#putbeacon").fadeIn("slow");
 		$("#putcancel").fadeOut("slow");
-	}
-	$("#putcancel").click(cancel);
-	$("#beaconmenu > div").click(cancel);
+	});
 }
 
 $(function(){
-	guiInit();
 	threeInit();
+	guiInit();
 
 	navigator.geolocation.getCurrentPosition(function(e){
 		var lat = e.coords.latitude;
