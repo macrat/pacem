@@ -28,17 +28,13 @@ canvas {
 
 #openmenu {
 	position: fixed;
+	top: .5em;
+	left: .5em;
 	z-index: 2;
-	top: .3em;
-	left: .3em;
+	background-color: rgba(255, 255, 255, 0.7);
+	opacity: 0.8;
 	width: 3em;
 	height: 3em;
-	background-color: gray;
-	color: white;
-	border-radius: 6px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }
 #sidemenu {
 	position: fixed;
@@ -51,20 +47,18 @@ canvas {
 	padding: .5em;
 }
 #menuheader {
-	font-size: 120%;
-	font-weight: bold;
-	display: block;
-	padding-bottom: .5em;
+	font-size: 150%;
+	display: flex;
+	padding-bottom: .2em;
 	border-bottom: 1px solid gray;
+	align-items: center;
+}
+#menuheader span {
+	flex-grow: 1;
 }
 #closemenu {
-	font-size: 80%;
-	background-color: gray;
-	color: white;
-	padding: .2em;
-	border-radius: 6px;
-	display: inline-block;
-	float: right;
+	width: 2em;
+	height: 2em;
 }
 #nearbeacons, #settings {
 	margin-top: 1em;
@@ -88,24 +82,21 @@ canvas {
 	background-color: rgba(0, 0, 0, 0.1);
 }
 
-#putbeacon {
+.rightbottom_button {
 	position: fixed;
 	z-index: 2;
 	bottom: .3em;
 	right: .3em;
-	width: 3em;
-	height: 3em;
-	background-color: gray;
-	color: white;
-	border-radius: 6px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	width: 4em;
+	height: 4em;
+}
+#putcancel, #removebeacon {
+	display: none;
 }
 #beaconmenu {
 	position: fixed;
 	z-index: 2;
-	bottom: 3.2em;
+	bottom: 4em;
 	right: .3em;
 	width: 3em;
 }

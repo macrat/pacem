@@ -130,24 +130,23 @@ function guiInit(){
 	});
 
 	$("#putbeacon").click(function(){
-		if($("#beaconmenu").css("opacity") != 1){
-			$("#beaconmenu").animate({
-				height: beaconmenu_height,
-				opacity: 1
-			});
-		}else{
-			$("#beaconmenu").animate({
-				height: 0,
-				opacity: 0
-			});
-		}
+		$("#beaconmenu").animate({
+			height: beaconmenu_height,
+			opacity: 1
+		});
+		$("#putbeacon").fadeOut("slow");
+		$("#putcancel").fadeIn("slow");
 	});
-	$("#beaconmenu > div").click(function(){
+	function cancel(){
 		$("#beaconmenu").animate({
 			height: 0,
 			opacity: 0
 		});
-	});
+		$("#putbeacon").fadeIn("slow");
+		$("#putcancel").fadeOut("slow");
+	}
+	$("#putcancel").click(cancel);
+	$("#beaconmenu > div").click(cancel);
 }
 
 $(function(){
