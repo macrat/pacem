@@ -1,6 +1,35 @@
 var scene, camera, renderer, controls;
 var beacons = [];
 
+function changeMessage(message){
+	var dest = $("#message");
+	if(message == ""){
+		$("main").css("display", "block");
+		dest
+			.fadeOut("slow")
+			.html("")
+
+	}else{
+		if(dest.css("display") == "none"){
+			dest
+				.html(message)
+				.fadeIn("slow", function(){
+					$("main").css("display", "none");
+				})
+		}else{
+			dest.fadeOut("fast", function(){
+				dest
+					.html(message)
+					.fadeIn("fast")
+			});
+		}
+	}
+}
+
+function currentMessage(){
+	return $("#message").html();
+}
+
 function cameraOpen(){
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
 
@@ -19,7 +48,7 @@ function cameraOpen(){
 				return;
 			}
 		}
-		alert("has not environment camera");
+		//changeMessage("has not environment camera");  // debug commentout
 	});
 }
 
@@ -76,6 +105,14 @@ function threeInit(){
 function guiInit(){
 	var beaconmenu_height = $("#beaconmenu").outerHeight();
 
+	$("#beaconmenu").css({
+			bottom:  $("#beaconmenu").css("bottom") + beaconmenu_height,
+			height: 0,
+			opacity: 0
+		});
+
+	$("main").css("display", "none");
+
 	$("#openmenu").click(function(){
 		$("#openmenu").animate({ opacity: 0 });
 		$("#sidemenu").animate({ left: 0 });
@@ -84,8 +121,6 @@ function guiInit(){
 		$("#openmenu").animate({ opacity: 1 });
 		$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
 	});
-
-	$("#beaconmenu").css("bottom", $("#beaconmenu").css("bottom") + beaconmenu_height);
 
 	$("#putbeacon").click(function(){
 		if($("#beaconmenu").css("opacity") != 1){
@@ -123,8 +158,10 @@ $(function(){
 		}
 		updateBeacons(ls);
 
-		$("#loading").fadeOut();
+		if(currentMessage() == "loading..."){
+			changeMessage("");
+		}
 	}, function(){
-		console.log("get location failed.");
+		changeMessage("get location failed.");
 	});
 });
