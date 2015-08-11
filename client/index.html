@@ -1,8 +1,9 @@
 <head>
 <style>
-html, body {
+html, body, div, main {
 	margin: 0;
 	padding: 0;
+	overflow: hidden;
 }
 video {
 	position: fixed;
@@ -15,21 +16,142 @@ canvas {
 	z-index: 1;
 }
 #loading {
+	position: fixed;
+	background-color: white;
 	display: flex;
+	z-index: 10;
 	align-items: center;
 	justify-content: center;
+	width: 100%;
 	height: 100%;
 	font-size: 200%;
 }
+
+#openmenu {
+	position: fixed;
+	z-index: 2;
+	top: .3em;
+	left: .3em;
+	width: 3em;
+	height: 3em;
+	background-color: gray;
+	color: white;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#sidemenu {
+	position: fixed;
+	left: -20em;
+	z-index: 5;
+	width: 15em;
+	height: 100%;
+	background-color: white;
+	border-right: 1px solid gray;
+	padding: .5em;
+}
+#sidemenu > div:first-child {
+	font-size: 120%;
+	font-weight: bold;
+	display: block;
+	padding-bottom: .5em;
+	border-bottom: 1px solid gray;
+}
+#closemenu {
+	font-size: 80%;
+	background-color: gray;
+	color: white;
+	padding: .2em;
+	border-radius: 6px;
+	display: inline-block;
+	float: right;
+}
+
+#putbeacon {
+	position: fixed;
+	z-index: 2;
+	bottom: .3em;
+	right: .3em;
+	width: 3em;
+	height: 3em;
+	background-color: gray;
+	color: white;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+#beaconmenu {
+	position: fixed;
+	z-index: 2;
+	bottom: 3.2em;
+	right: .3em;
+	width: 3em;
+}
+#beaconmenu > div {
+	font-size: 200%;
+}
 </style>
+<script src="jquery.js"></script>
 <script src="three.js"></script>
 <script src="DeviceOrientationControls.js"></script>
+
+<script>
+$(function(){
+	var beaconmenu_height = $("#beaconmenu").outerHeight();
+
+	$("#openmenu").click(function(){
+		$("#sidemenu").animate({ left: 0 });
+	});
+	$("#closemenu").click(function(){
+		$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
+	});
+
+	$("#beaconmenu").css("bottom", $("#beaconmenu").css("bottom") + beaconmenu_height);
+
+	$("#putbeacon").click(function(){
+		$("#beaconmenu").animate({
+			height: beaconmenu_height,
+			opacity: 1
+		});
+	});
+	$("#beaconmenu > div").click(function(){
+		$("#beaconmenu").animate({
+			height: 0,
+			opacity: 0
+		});
+	});
+});
+</script>
 </head>
 
 <body>
 <div id=loading>loading...</div>
 
-<video autoplay></video>
+<main>
+	<div id=openmenu>menu</div>
+	<div id=sidemenu>
+		<div>
+			pacem
+			<span id=closemenu>back</span>
+		</div>
+		this is menu.<br>
+		hello!<br>
+		this<br>
+		is<br>
+		menu<br>
+	</div>
+
+	<div id=putbeacon>+</div>
+	<div id=beaconmenu>
+		<div>a</div>
+		<div>b</div>
+		<div>c</div>
+	</div>
+
+	<video autoplay></video>
+</main>
 
 <script>
 var scene, camera, renderer, controls;
@@ -94,7 +216,7 @@ function init(){
 	renderer.setClearColor(0x000000, 0);
 	renderer.setSize(window.innerWidth, window.innerHeight);
 
-	document.body.appendChild(renderer.domElement);
+	$("main").append(renderer.domElement);
 
 	(function animation(){
 		window.requestAnimationFrame(animation);
@@ -121,7 +243,7 @@ function init(){
 		}
 		updateBeacons(ls);
 
-		document.querySelector("#loading").style.display = "none";
+		$("#loading").fadeOut();
 	}, function(){
 		console.log("get location failed.");
 	});
