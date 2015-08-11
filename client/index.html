@@ -1,0 +1,130 @@
+<head>
+<style>
+html, body {
+	margin: 0;
+	padding: 0;
+}
+video {
+	position: fixed;
+	z-index: 0;
+	width: 100%;
+	height: auto;
+}
+canvas {
+	position: fixed;
+	z-index: 1;
+}
+#loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	font-size: 200%;
+}
+</style>
+<script src="three.js"></script>
+<script src="DeviceOrientationControls.js"></script>
+</head>
+
+<body>
+<div id=loading>loading...</div>
+
+<video autoplay></video>
+
+<script>
+var scene, camera, renderer, controls;
+var beacons = [];
+
+function cameraOpen(){
+	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
+
+	MediaStreamTrack.getSources(function(data){
+		for(var i in data){
+			if(data[i].kind == "video" && data[i].facing == "environment"){
+				navigator.getUserMedia(
+					{ audio: false, video: {
+						optional: [{ sourceId: data[i].id }]
+					} },
+					function(stream){
+						document.querySelector('video').src = window.URL.createObjectURL(stream);
+					},
+					console.log
+				);
+				return;
+			}
+		}
+		alert("has not environment camera");
+	});
+}
+
+function positionChange(latitude, longitude, altitude){
+	camera.position.x = latitude * 1519.85;
+	camera.position.z = longitude * 1519.85;
+	camera.position.y = altitude * 1519.85;
+}
+
+function updateBeacons(newbeacons){
+	beacons.forEach(function(beacon){
+		scene.remove(beacon);
+	});
+
+	var geo = new THREE.BoxGeometry(1, 1, 1);
+	var mat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+	newbeacons.forEach(function(beacon){
+		var mesh = new THREE.Mesh(geo, mat);
+		mesh.position.x = beacon[0] * 1519.85;
+		mesh.position.z = beacon[1] * 1519.85;
+		mesh.position.y = beacon[2] * 1519.85;
+		scene.add(mesh);
+		beacons.push(mesh);
+	});
+
+	renderer.render(scene, camera);
+}
+
+function init(){
+	cameraOpen();
+
+	scene = new THREE.Scene();
+
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+	controls = new THREE.DeviceOrientationControls(camera);
+
+	renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+	renderer.setClearColor(0x000000, 0);
+	renderer.setSize(window.innerWidth, window.innerHeight);
+
+	document.body.appendChild(renderer.domElement);
+
+	(function animation(){
+		window.requestAnimationFrame(animation);
+
+		navigator.geolocation.getCurrentPosition(function(e){
+			positionChange(e.coords.latitude, e.coords.longitude, e.coords.altitude||0);
+		});
+		controls.update();
+		renderer.render(scene, camera);
+	})();
+}
+
+(function(){
+	init();
+
+	navigator.geolocation.getCurrentPosition(function(e){
+		var lat = e.coords.latitude;
+		var lng = e.coords.longitude;
+		var alt = e.coords.altitude;
+
+		var ls = [];
+		for(var i=0; i<100; i++){
+			ls.push([lat+(Math.random()*0.02-0.01), lng+(Math.random()*0.02-0.01), (alt||0)+(Math.random()*0.01-0.005)]);
+		}
+		updateBeacons(ls);
+
+		document.querySelector("#loading").style.display = "none";
+	}, function(){
+		console.log("get location failed.");
+	});
+})();
+</script>
+</body>
