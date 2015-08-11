@@ -106,6 +106,8 @@ function threeInit(){
 			camera.updateProjectionMatrix();
 
 			renderer.setSize(window.innerWidth, window.innerHeight);
+
+			$("#menucontent").css("height", $("#sidemenu").innerHeight() - Number($("#sidemenu").css("padding").slice(0, -2))*2 - $("#menuheader").outerHeight());
 		});
 }
 
@@ -117,6 +119,8 @@ function guiInit(){
 			height: 0,
 			opacity: 0
 		});
+
+	$("#menucontent").css("height", $("#sidemenu").innerHeight() - Number($("#sidemenu").css("padding").slice(0, -2))*2 - $("#menuheader").outerHeight());
 
 	$("main").css("display", "none");
 

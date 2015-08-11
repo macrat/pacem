@@ -31,8 +31,7 @@ canvas {
 	top: .5em;
 	left: .5em;
 	z-index: 2;
-	background-color: rgba(255, 255, 255, 0.7);
-	opacity: 0.8;
+	background-color: rgba(255, 255, 255, 0.9);
 	width: 3em;
 	height: 3em;
 }
@@ -60,12 +59,29 @@ canvas {
 	width: 2em;
 	height: 2em;
 }
-#nearbeacons, #settings {
+#menucontent {
+	overflow: auto;
+}
+#username {
+	font-size: 130%;
+	margin: .1em;
+	padding: .2em;
+	display: block;
+}
+#username:active {
+	background-color: rgba(0, 0, 0, 0.03);
+}
+#username img {
+	margin-left: .2em;
+	width: .7em;
+	height: .7em;
+}
+#nearbeacons {
 	margin-top: 1em;
 }
-#nearbeacons span:first-child, #settings span:first-child {
+#nearbeacons span:first-child {
 	display: block;
-	font-size: 110%;
+	font-size: 120%;
 	font-weight: bold;
 }
 #nearbeacons ul {
