@@ -124,15 +124,6 @@ function guiInit(){
 
 	$("main").css("display", "none");
 
-	$("#openmenu").click(function(){
-		$("#openmenu").animate({ opacity: 0 });
-		$("#sidemenu").animate({ left: 0 });
-	});
-	$("#closemenu, #putbeacon, #putcancel, #removebeacon, canvas").click(function(){
-		$("#openmenu").animate({ opacity: 1 });
-		$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
-	});
-
 	$("#putbeacon").click(function(){
 		$("#beaconmenu").animate({
 			height: beaconmenu_height,
@@ -149,6 +140,47 @@ function guiInit(){
 		$("#putbeacon").fadeIn("slow");
 		$("#putcancel").fadeOut("slow");
 	});
+
+	$("#openmenu").click(function(){
+		$("#openmenu").animate({ opacity: 0 });
+		$("#sidemenu").animate({ left: 0 });
+	});
+	$("#closemenu, #putbeacon, #putcancel, #removebeacon, canvas").click(function(){
+		if(!menuSlided){
+			$("#openmenu").animate({ opacity: 1 });
+			$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
+		}
+	});
+
+	var menuSlided = false;
+	var touchX = 0;
+	$("canvas")
+		.bind("touchstart", function(e){
+			if(e.originalEvent.changedTouches[0].pageX < 32){
+				menuSlided = true;
+			}
+		})
+		.bind("touchmove", function(e){
+			touchX = e.originalEvent.changedTouches[0].pageX;
+			if(menuSlided){
+				var max = $("#sidemenu").outerWidth();
+				$("#sidemenu").css("left", Math.min(0, touchX - max));
+				$("#openmenu").css("opacity", Math.min(1, 1 - touchX/max));
+			}
+		})
+		.bind("touchend", function(e){
+			if(menuSlided){
+				var max = $("#sidemenu").outerWidth();
+				if(touchX > max/2){
+					$("#openmenu").animate({ opacity: 0 });
+					$("#sidemenu").animate({ left: 0 });
+				}else{
+					$("#openmenu").animate({ opacity: 1 });
+					$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
+				}
+			}
+			menuSlided = false;
+		})
 }
 
 $(function(){
