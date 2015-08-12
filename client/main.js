@@ -11,7 +11,6 @@ function changeMessage(message){
 		dest
 			.fadeOut("slow")
 			.html("")
-
 	}else{
 		if(dest.css("display") == "none"){
 			dest
@@ -45,7 +44,6 @@ function showNotify(message){
 				});
 			}, 3000);
 		})
-		;
 }
 
 var __confirm_callback = null;
@@ -122,7 +120,7 @@ function cameraInit(){
 function positionChange(latitude, longitude, altitude){
 	camera.position.x = latitude * 1519.85;
 	camera.position.z = longitude * 1519.85;
-	camera.position.y = 1; // altitude * 1519.85;  // ignore altitude
+	camera.position.y = 1;
 }
 
 function updatePosition(){
@@ -179,14 +177,14 @@ function rewriteBeacons(){
 		var mesh = new THREE.Mesh(geo, frame);
 		mesh.position.x = place[0] * 1519.85;
 		mesh.position.z = place[1] * 1519.85;
-		mesh.position.y = 0; // place[2] * 1519.85;  // ignore altitude
+		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
 
 		var mesh = new THREE.Mesh(geo, fill);
 		mesh.position.x = place[0] * 1519.85;
 		mesh.position.z = place[1] * 1519.85;
-		mesh.position.y = 0; // place[2] * 1519.85;  // ignore altitude
+		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
 	}
@@ -203,6 +201,8 @@ function rewriteBeacons(){
 			putBeacon(beacon_list[x]);
 		}
 	}
+
+	renderer.render(scene, camera);
 }
 
 function updateBeacons(nearbeacons, mybeacons){
@@ -234,8 +234,6 @@ function updateBeacons(nearbeacons, mybeacons){
 
 	rewriteBeacons();
 	updatePosition();
-
-	renderer.render(scene, camera);
 }
 
 function threeInit(){
