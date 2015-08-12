@@ -143,14 +143,17 @@ function doRequestSocketIo(socket)
 		var db = new sqlite3.Database(fileDb);
 		var tmp = new Beacon();
 		db.serialize(function() {
-			// TODO: インジェクション対策
-			db.each("SELECT * FROM Beacons WHERE id=" + req.beaconId, function(err, row) {
-				tmp.userId = row.userId;
-				tmp.beaconId = row.beaconId;
-				tmp.lat = row.lat;
-				tmp.lng = row.lng;
-				tmp.alt = row.alt;
-				tmp.timestamp = row.update_date;
+			db.each("SELECT * FROM Beacons WHERE id=?", req.beaconId, function(err, row) {
+				if(err){
+					console.log("error: " + err);
+				}else{
+					tmp.userId = row.userId;
+					tmp.beaconId = row.id;
+					tmp.lat = row.lat;
+					tmp.lng = row.lng;
+					tmp.alt = row.alt;
+					tmp.timestamp = row.update_date;
+				}
 			});
 		});
 		db.close(function(err) {
