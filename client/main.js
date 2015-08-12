@@ -128,10 +128,18 @@ function updateBeacons(newbeacons){
 		scene.remove(beacon);
 	});
 
-	var geo = new THREE.BoxGeometry(1, 1, 1);
-	var mat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+	var geo = new THREE.OctahedronGeometry(1);
+	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+	var fill = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 });
 	newbeacons.forEach(function(beacon){
-		var mesh = new THREE.Mesh(geo, mat);
+		var mesh = new THREE.Mesh(geo, frame);
+		mesh.position.x = beacon[0] * 1519.85;
+		mesh.position.z = beacon[1] * 1519.85;
+		mesh.position.y = 0; // beacon[2] * 1519.85;  // ignore altitude
+		scene.add(mesh);
+		beacons.push(mesh);
+
+		var mesh = new THREE.Mesh(geo, fill);
 		mesh.position.x = beacon[0] * 1519.85;
 		mesh.position.z = beacon[1] * 1519.85;
 		mesh.position.y = 0; // beacon[2] * 1519.85;  // ignore altitude
@@ -156,6 +164,10 @@ function threeInit(){
 
 	(function animation(){
 		window.requestAnimationFrame(animation);
+
+		for(var i in beacons){
+			beacons[i].rotation.y += 0.01;
+		}
 
 		navigator.geolocation.getCurrentPosition(function(e){
 			positionChange(e.coords.latitude, e.coords.longitude, e.coords.altitude||0);
@@ -322,7 +334,7 @@ $(function(){
 
 		var ls = [];
 		for(var i=0; i<100; i++){
-			ls.push([lat+(Math.random()*0.02-0.01), lng+(Math.random()*0.02-0.01), (alt||0)+(Math.random()*0.01-0.005)]);
+			ls.push([lat+(Math.random()*0.04-0.02), lng+(Math.random()*0.04-0.02), (alt||0)+(Math.random()*0.01-0.005)]);
 		}
 		updateBeacons(ls);
 
