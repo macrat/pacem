@@ -30,6 +30,22 @@ function currentMessage(){
 	return $("#message").html();
 }
 
+function showNotify(message){
+	$("#notify").append("<div>" + message + "</div>");
+
+	var added = $("#notify div:last")
+			.css("display", "none")
+			.fadeIn("slow")
+
+	setTimeout(function(){
+		added.fadeOut("slow", function(){
+			added.fadeOut("slow", function(){
+				added.remove();
+			});
+		});
+	}, 3000);
+}
+
 function cameraOpen(){
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
 
