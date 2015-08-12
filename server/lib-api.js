@@ -139,13 +139,20 @@ function getBeacon(id, callback){
 	//  data -- information of beacon. this format is same as one beacon of beacons list.
 	//  err -- error message string. if success, this is null.
 
-	// debug: do something here
+
+	g_socket.emit("search", { beaconId : id });
+	g_socket.on("search-ret", function (data) {
+		callback(data.beacon, null);
+	});
+
+
+/*	// debug: do something here
 	callback({
 		id: id,
 		place: [200, 400, 800],
 		owner: "user",
 		date: (new Date())
-	}, null);
+	}, null);*/
 }
 
 

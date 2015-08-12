@@ -56,6 +56,21 @@
 				});
 			});
 		});
+
+		// Search 処理
+		$("#search-beacon").click(function() {
+			getBeacon($("#input-search-beacon-id").val(), function(data) {
+				$("#search-ret-logs").text("");
+				$("#search-ret-logs").append(
+					"BeaconId = " + data.beaconId + " @ User Id = " + data.userId + "<br>" +
+					"lat:" + data.lat + "<br>" +
+					"lng:" + data.lng + "<br>" +
+					"timestamp:" + data.timestamp + "<br>"
+				);
+
+				$("#input-search-beacon-id").val("");
+			});
+		});
 	});
 	</script>
 
