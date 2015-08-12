@@ -1,5 +1,7 @@
 var scene, camera, renderer, controls;
-var beacons = [];
+var beacon_list = [];
+var beacon_models = [];
+var current_beacon = null;
 
 function changeMessage(message){
 	var dest = $("#message");
@@ -123,29 +125,97 @@ function positionChange(latitude, longitude, altitude){
 	camera.position.y = 1; // altitude * 1519.85;  // ignore altitude
 }
 
-function updateBeacons(newbeacons){
-	beacons.forEach(function(beacon){
-		scene.remove(beacon);
-	});
+function updatePosition(){
+	navigator.geolocation.getCurrentPosition(function(e){
+		positionChange(e.coords.latitude, e.coords.longitude, e.coords.altitude||0);
 
+		$("#nearbeacons li").toArray().forEach(function(x){
+			var pos = beacon_list[x.dataset.id].place;
+			var distance = Math.sqrt(Math.pow((pos[0]-e.coords.latitude), 2) + Math.pow((pos[1]-e.coords.longitude), 2)) * 1519.85;
+
+			$(".distance", x).text(Math.round(distance) + "m");
+			$(x).data("distance", distance)
+		});
+
+		$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+		$("#nearbeacons li").click(function(){
+			var oldid = $("#selected_beacon").data("id");
+			$("#selected_beacon").attr("id", "");
+
+			if(oldid == $(this).data("id")){
+				current_beacon = null;
+			}else{
+				$(this).attr({
+						style: "",
+						id: "selected_beacon"
+					});
+				current_beacon = beacon_list[$(this).data("id")];
+			}
+
+			rewriteBeacons();
+		});
+	});
+}
+
+function rewriteBeacons(){
 	var geo = new THREE.OctahedronGeometry(1);
 	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 	var fill = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 });
-	newbeacons.forEach(function(beacon){
+
+	function putBeacon(beacon){
+		var place = beacon.place;
+
 		var mesh = new THREE.Mesh(geo, frame);
-		mesh.position.x = beacon[0] * 1519.85;
-		mesh.position.z = beacon[1] * 1519.85;
-		mesh.position.y = 0; // beacon[2] * 1519.85;  // ignore altitude
+		mesh.position.x = place[0] * 1519.85;
+		mesh.position.z = place[1] * 1519.85;
+		mesh.position.y = 0; // place[2] * 1519.85;  // ignore altitude
 		scene.add(mesh);
-		beacons.push(mesh);
+		beacon_models.push(mesh);
 
 		var mesh = new THREE.Mesh(geo, fill);
-		mesh.position.x = beacon[0] * 1519.85;
-		mesh.position.z = beacon[1] * 1519.85;
-		mesh.position.y = 0; // beacon[2] * 1519.85;  // ignore altitude
+		mesh.position.x = place[0] * 1519.85;
+		mesh.position.z = place[1] * 1519.85;
+		mesh.position.y = 0; // place[2] * 1519.85;  // ignore altitude
 		scene.add(mesh);
-		beacons.push(mesh);
+		beacon_models.push(mesh);
+	}
+
+	beacon_models.forEach(function(model){
+		scene.remove(model);
 	});
+
+	if(current_beacon){
+		putBeacon(current_beacon);
+	}else{
+		for(var x in beacon_list){
+			putBeacon(beacon_list[x]);
+		}
+	}
+}
+
+function updateBeacons(newbeacons){
+	beacon_models.forEach(function(model){
+		scene.remove(model);
+	});
+
+	beacon_models = [];
+	beacon_list = {};
+
+	$("#nearbeacons ul").html("");
+
+	newbeacons.forEach(function(beacon){
+		var place = beacon.place;
+		beacon_list[beacon.id] = beacon;
+
+		function zfill(x){
+			return ("0" + x).slice(-2);
+		}
+		$("#nearbeacons ul").append("<li data-id='" + beacon.id + "'><div><div class='owner'>" + beacon.owner + "</div><div class='created'>" + zfill(beacon.date.getMonth()) + "/" + zfill(beacon.date.getDate()) + " " + zfill(beacon.date.getHours()) + ":" + zfill(beacon.date.getMinutes()) + "</div></div><div class='distance'></div></li>");
+	});
+
+	rewriteBeacons();
+	updatePosition();
 
 	renderer.render(scene, camera);
 }
@@ -165,16 +235,15 @@ function threeInit(){
 	(function animation(){
 		window.requestAnimationFrame(animation);
 
-		for(var i in beacons){
-			beacons[i].rotation.y += 0.01;
+		for(var i in beacon_models){
+			beacon_models[i].rotation.y += 0.01;
 		}
 
-		navigator.geolocation.getCurrentPosition(function(e){
-			positionChange(e.coords.latitude, e.coords.longitude, e.coords.altitude||0);
-		});
 		controls.update();
 		renderer.render(scene, camera);
 	})();
+
+	setInterval(updatePosition, 1000);
 
 	window.addEventListener('resize', function(){
 			camera.aspect = window.innerWidth / window.innerHeight;
@@ -265,6 +334,14 @@ function guiInit(){
 	});
 
 
+	$("#mybeacons li").click(function(){
+		$(".beaconlist li").attr("id", "");
+		$(this).attr("style", "");
+		$(this).attr("id", "selected_beacon");
+		showNotify("select mybeacon is not implemented");
+	});
+
+
 	function rmBeacon(beaconid){
 		confirm("remove this beacon?", function(choice){
 			if(choice){
@@ -334,7 +411,12 @@ $(function(){
 
 		var ls = [];
 		for(var i=0; i<100; i++){
-			ls.push([lat+(Math.random()*0.04-0.02), lng+(Math.random()*0.04-0.02), (alt||0)+(Math.random()*0.01-0.005)]);
+			ls.push({
+				id: i,
+				place: [lat+(Math.random()*0.04-0.02), lng+(Math.random()*0.04-0.02), 0],
+				owner: ["this", "is", "test"][i%3],
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*7)
+			});
 		}
 		updateBeacons(ls);
 

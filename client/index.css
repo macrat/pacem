@@ -160,6 +160,10 @@ canvas {
 	flex-direction: column;
 	justify-content: center;
 }
+li#selected_beacon {
+	background-color: rgba(0, 0, 0, 0.7);
+	color: white;
+}
 .owner {
 	font-size: 110%;
 }
