@@ -1,0 +1,144 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<script type="text/javascript" src="jquery.js"></script>
+	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+<!--	<script src="http://192.168.11.6:3000/socket.io/socket.io.js"></script> -->
+
+
+
+	<script type="text/javascript" charset="utf-8" src="http://js.api.olp.yahooapis.jp/OpenLocalPlatform/V1/jsapi?appid=VfM816axg65wOLg0cXv902.MT1qlMbONmZMihqcEvFK2K35fjLnTTOMvgL2TLt5Yl.CKjH8-"></script>
+	<script>
+	var ymap;
+	var MyCircle = 0;
+	var s = io.connect('http://localhost:3000');
+//	var s = io.connect('http://192.168.11.6:3000');
+
+	//サーバから受け取るイベント
+	s.on("connect", function () {});
+	s.on("disconnect", function () {});
+	s.on("get-db-ret", function (data) {
+		console.log("get-db-ret");
+		console.log(data.db);
+
+		$("#db-logs").text("");
+		if (data.db.length == 0) {
+			$("#db-logs").text("no button.");
+		}
+
+		for(var i=0; i< data.db.length; ++i) {
+			$("#db-logs").append(
+				"Beacon:" + i + " : BeaconId = " + data.db[i].beaconId + " @ User Id = " + data.db[i].userId + "<br>" +
+				"lat:" + data.db[i].lat + "<br>" +
+				"lng:" + data.db[i].lng + "<br>" +
+				"timestamp:" + data.db[i].timestamp + "<br>"
+			);
+
+			var strokeStyle = new Y.Style("FF0000", 4, 0.7);
+			var fillStyle   = new Y.Style("FF0000", null, 0.2);
+			var tmp = new Y.Circle(new Y.LatLng(data.db[i].lat, data.db[i].lng), new Y.Size(0.003, 0.003), {
+					unit:"km",
+				strokeStyle: strokeStyle,
+				fillStyle:fillStyle
+			});
+			ymap.addFeature(tmp);
+
+		}
+
+		$("#db-logs").append("<br>");
+	});
+
+var oldLat, oldLng;
+	function geoSuccess(position) {
+		// 成功
+		// 緯度
+		var lat = position.coords.latitude;
+		// 軽度
+		var lng = position.coords.longitude;
+		// 緯度経度の誤差(m)
+		var accuracy = Math.floor(position.coords.accuracy);
+
+oldLat = lat;
+oldLng = lng;
+
+		// 高度の取得
+		var attitude = position.coords.attitude;
+		// 高度の誤差
+		var attitudeAccuracy = position.coords.altitudeAccuracy;
+		// 方角
+		var heading = position.coords.heading;
+
+
+		var location = "<li>"+"緯度：" + position.coords.latitude + "</li>";
+		location += "<li>"+"経度：" + position.coords.longitude + "</li>";
+		location += "<li>"+"高度：" + position.coords.attitude + "</li>";
+		location += "<li>"+"方角：" + position.coords.heading + "</li>";
+		location += "<li>"+"誤差：" + attitude + "</li>";
+		location += "<li>"+"誤差高さ：" + attitudeAccuracy + "</li>";
+		document.getElementById("location").innerHTML = location;
+
+
+		ymap.panTo(new Y.LatLng(lat, lng), true);
+
+
+		var strokeStyle = new Y.Style("00ff00", 4, 0.7);
+		var fillStyle   = new Y.Style("00ff00", null, 0.2);
+		if (MyCircle != 0) {
+			ymap.removeFeature(MyCircle);
+		}
+		MyCircle = new Y.Circle(new Y.LatLng(lat, lng), new Y.Size(0.003, 0.003), {
+				unit:"km",
+			strokeStyle: strokeStyle,
+			fillStyle:fillStyle
+		});
+		ymap.addFeature(MyCircle);
+		return;
+	}
+
+	function geoError() {
+		// 失敗 or 拒否
+		alert("Geolocation Api は使用できません。");
+		return;
+	}
+
+
+	$(document).ready(function() {
+		ymap = new Y.Map("map", {
+			configure : {
+				mapType : Y.Map.TYPE.SMARTPHONE,
+				dragging : true,
+				enableFlickScroll : true
+			}
+		});
+		ymap.drawMap(new Y.LatLng(0, 0), 20, Y.LayerSetId.NORMAL);
+		// 現在の位置情報取得を実施（１秒毎）
+		setInterval("navigator.geolocation.getCurrentPosition(geoSuccess, geoError);", 1000);
+
+
+		s.emit("get-db", {});
+		$("#get-db").click(function () {
+			s.emit("get-db", {});
+		});
+		$("#regist").click(function () {
+			// 新規登録処理。
+			s.emit("set", { userId : "fromViewer", beaconId : "fromViewer", lat : oldLat, lng : oldLng });
+		});
+	});
+	</script>
+
+	<title>Server Client Sample</title>
+</head>
+
+<body>
+	<h1>Client</h1>
+	<button id="get-db">Get database.</button>
+	<div id="db-logs">LOGS</div>
+	<hr>
+	<h2>Beacon info</h2>
+	<ui id="location"></ui>
+	<button id="regist">登録</button>
+	<div id="map" style="width:400px; height:300px"></div>
+</body>
+</html>

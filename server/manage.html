@@ -1,0 +1,138 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<script type="text/javascript" src="jquery.js"></script>
+	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+
+
+	<script type="text/javascript">
+	var s = io.connect('http://localhost:3000');
+
+
+	//サーバから受け取るイベント
+	s.on("connect", function () {});
+	s.on("disconnect", function () {});
+
+	// Get Api
+	function sendGet(pLat, pLng) {
+		s.emit("get", { lat : pLat, lng : pLng });
+	}
+	// Get API を読んだ時の返却値
+	s.on("get-ret", function (data) {
+		$("#get-ret-logs").text("");
+		if (data.beacons.length == 0) {
+			$("#get-ret-logs").text("no button.");
+		}
+
+		for(var i=0; i< data.beacons.length; ++i) {
+			$("#get-ret-logs").append(
+				"Beacon:" + i + " : BeaconId = " + data.beacons[i].beaconId + " @ User Id = " + data.beacons[i].userId + "<br>" +
+				"lat:" + data.beacons[i].lat + "<br>" +
+				"lng:" + data.beacons[i].lng + "<br>" +
+				"timestamp:" + data.beacons[i].timestamp + "<br>"
+			);
+		}
+
+		$("#get-ret-logs").append("<br>");
+	});
+
+
+	// Set Api
+	function sendSet(pUserId, pBeaconId, pLat, pLng) {
+		s.emit("set", { userId : pUserId, beaconId : pBeaconId, lat : pLat, lng : pLng });
+	}
+	// Set API を読んだ時の返却値
+	s.on("set-ret", function (data) {
+console.log("Set-ret:" + data.status);
+console.log(data.beacon);
+	});
+
+	// Search Api
+	function sendSearch(pId) {
+		s.emit("search", { id : pId });
+	}
+	// Search を読んだ時の返却値
+	s.on("search-ret", function (data) {
+console.log("Search-ret:" + data.status);
+	});
+
+
+	s.on("get-db-ret", function (data) {
+		console.log("get-db-ret");
+		console.log(data.db);
+
+		$("#db-logs").text("");
+		if (data.db.length == 0) {
+			$("#db-logs").text("no button.");
+		}
+
+		for(var i=0; i< data.db.length; ++i) {
+			$("#db-logs").append(
+				"Beacon:" + i + " : BeaconId = " + data.db[i].beaconId + " @ User Id = " + data.db[i].userId + "<br>" +
+				"lat:" + data.db[i].lat + "<br>" +
+				"lng:" + data.db[i].lng + "<br>" +
+				"timestamp:" + data.db[i].timestamp + "<br>"
+			);
+		}
+
+		$("#db-logs").append("<br>");
+	});
+	$(document).ready(function() {
+		$("#get-db").click(function () {
+			s.emit("get-db", {});
+		});
+		$("#set-beacon").click(function() {
+			sendSet(
+				$("#input-set-beacon-userId").val(),
+				$("#input-set-beacon-beaconId").val(),
+				$("#input-set-beacon-lat").val(),
+				$("#input-set-beacon-lng").val()
+			);
+
+			$("#input-set-beacon-userId").val("");
+			$("#input-set-beacon-beaconId").val("");
+			$("#input-set-beacon-lat").val("");
+			$("#input-set-beacon-lng").val("");
+		});
+		$("#get-beacon").click(function() {
+			sendGet(
+				$("#input-get-beacon-lat").val(),
+				$("#input-get-beacon-lng").val()
+			);
+
+			$("#input-get-beacon-lat").val("");
+			$("#input-get-beacon-lng").val("");
+		});
+	});
+	</script>
+
+
+	<title>Server Client Sample</title>
+</head>
+
+<body>
+	<h1>Client</h1>
+	<button id="get-db">Get database.</button>
+	<div id="db-logs">LOGS</div>
+	<hr>
+	<h2>Set Beacon</h2>
+	User Id:<input type="text" id="input-set-beacon-userId"><br>
+	Beacon Id:<input type="text" id="input-set-beacon-beaconId"><br>
+	Lat:<input type="text" id="input-set-beacon-lat"><br>
+	Lng:<input type="text" id="input-set-beacon-lng"><br>
+	<button id="set-beacon">SetBeacon</button>
+	<hr>
+	<h2>Get Beacon</h2>
+	Lat:<input type="text" id="input-get-beacon-lat"><br>
+	Lng:<input type="text" id="input-get-beacon-lng"><br>
+	<button id="get-beacon">GetBeacon</button>
+	<div id="get-ret-logs"></div>
+	<hr>
+	<h2>Search Beacon</h2>
+	Id:<input type="text" id="input-search-beacon-id"><br>
+	<button id="search-beacon">SearchBeacon</button>
+	<div id="search-ret-logs"></div>
+</body>
+</html>
