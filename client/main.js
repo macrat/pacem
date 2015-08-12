@@ -200,6 +200,14 @@ function guiInit(){
 }
 
 $(function(){
+	(function loadingAnimation(){
+		var target_opacity = 1.0;
+		if($("#loading").css("opacity") == 1.0){
+			target_opacity = 0.3;
+		}
+		$("#loading").animate({ opacity: target_opacity }, { duration: 2000, complete: loadingAnimation });
+	})();
+
 	threeInit();
 	guiInit();
 
@@ -207,6 +215,7 @@ $(function(){
 		var lat = e.coords.latitude;
 		var lng = e.coords.longitude;
 		var alt = e.coords.altitude;
+		console.log(lat, lng, alt);
 
 		var ls = [];
 		for(var i=0; i<100; i++){
@@ -214,7 +223,7 @@ $(function(){
 		}
 		updateBeacons(ls);
 
-		if(currentMessage() == "loading..."){
+		if($("#loading").length > 0){
 			changeMessage("");
 		}
 	}, function(){
