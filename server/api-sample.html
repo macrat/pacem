@@ -13,35 +13,9 @@
 	InitSocket(s, function(){}, function(){});
 
 
-	s.on("get-db-ret", function (data) {
-		console.log("get-db-ret");
-		console.log(data.db);
-
-		$("#db-logs").text("");
-		if (data.db.length == 0) {
-			$("#db-logs").text("no button.");
-		}
-
-		for(var i=0; i< data.db.length; ++i) {
-			$("#db-logs").append(
-				"Beacon:" + i + " : BeaconId = " + data.db[i].beaconId + " @ User Id = " + data.db[i].userId + "<br>" +
-				"lat:" + data.db[i].lat + "<br>" +
-				"lng:" + data.db[i].lng + "<br>" +
-				"timestamp:" + data.db[i].timestamp + "<br>"
-			);
-		}
-
-		$("#db-logs").append("<br>");
-	});
-
-
 	$(document).ready(function() {
-		$("#get-db").click(function () {
-			s.emit("get-db", {});
-		});
-
 		$("#set-beacon").click(function() {
-			updateUserInfo({ lat : $("#input-set-beacon-lat").val(), lng : $("#input-set-beacon-lng").val() }, function (){
+			updateUserInfo({ userId : 0, lat : $("#input-set-beacon-lat").val(), lng : $("#input-set-beacon-lng").val() }, function (){
 				putBeacon(0, function() {
 					$("#input-set-beacon-lat").val("");
 					$("#input-set-beacon-lng").val("");
@@ -49,7 +23,7 @@
 			});
 		});
 		$("#get-beacon").click(function() {
-			updateUserInfo({ lat : $("#input-get-beacon-lat").val(), lng : $("#input-get-beacon-lng").val() }, function(){
+			updateUserInfo({ userId : 0, lat : $("#input-get-beacon-lat").val(), lng : $("#input-get-beacon-lng").val() }, function(){
 				getNearBeacons(function (beacons) {
 					$("#get-ret-logs").text("");
 					if (beacons.length == 0) {
@@ -72,6 +46,16 @@
 				});
 			});
 		});
+
+		// remove 処理
+		$("#remove-beacon").click(function() {
+			updateUserInfo({ userId : $("#input-remove-beacon-user-id").val() }, function(){
+				removeBeacon($("#input-remove-beacon-beacon-id").val(), function () {
+					$("#input-remove-beacon-user-id").val("");
+					$("#input-remove-beacon-beacon-id").val("");
+				});
+			});
+		});
 	});
 	</script>
 
@@ -81,9 +65,6 @@
 
 <body>
 	<h1>Client</h1>
-	<button id="get-db">Get database.</button>
-	<div id="db-logs">LOGS</div>
-	<hr>
 	<h2>Set Beacon</h2>
 	Lat:<input type="text" id="input-set-beacon-lat"><br>
 	Lng:<input type="text" id="input-set-beacon-lng"><br>
@@ -99,5 +80,11 @@
 	Id:<input type="text" id="input-search-beacon-id"><br>
 	<button id="search-beacon">SearchBeacon</button>
 	<div id="search-ret-logs"></div>
+	<hr>
+	<h2>Remove Beacon</h2>
+	UserId:<input type="text" id="input-remove-beacon-user-id"><br>
+	BeaconId:<input type="text" id="input-remove-beacon-beacon-id"><br>
+	<button id="remove-beacon">RemoveBeacon</button>
+	<div id="remove-ret-logs"></div>
 </body>
 </html>

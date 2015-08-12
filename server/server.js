@@ -82,9 +82,9 @@ function doRequestSocketIo(socket)
 		db.serialize(function() {
 			// ビーコン追加サンプル
 			// http://stackoverflow.com/questions/22022633/inserting-id-field-autoincrement-with-sqlite3-and-node-js
-			var stmt = db.prepare("INSERT INTO Beacons (lat, lng, alt) VALUES (?,?,?)");
+			var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt) VALUES (?,?,?,?)");
 			// userid, lat, lng, timestamp
-			stmt.run(req.lat, req.lng, req.alt);
+			stmt.run(req.userId, req.lat, req.lng, req.alt);
 			stmt.finalize();
 		});
 		db.close();
@@ -139,6 +139,24 @@ function doRequestSocketIo(socket)
 	socket.on("search", function(req) {
 		DEBUG("Search. " + req.id);
 		io.sockets.emit("search-ret", { status:"success" });
+	});
+
+	// あるユーザーの作成した特定のビーコンを削除する処理
+	socket.on("remove", function(req) {
+		var db = new sqlite3.Database(fileDb);
+		db.serialize(function() {
+			var stmt = db.prepare("DELETE FROM Beacons WHERE userId = ? AND id = ?");
+			stmt.run(req.userId, req.beaconId);
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+DEBUG("Beacon removed.");
+		});
 	});
 
 

@@ -46,6 +46,7 @@ function updateUserInfo(data, callback){
 	//  err -- error message string. if success, this is null.
 
 
+	g_userId = data.userId;
 	g_lat = data.lat;
 	g_lng = data.lng;
 
@@ -155,6 +156,10 @@ function removeBeacon(id, callback){
 	// id -- beacon's id.
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
+
+
+	g_socket.emit("remove", { userId : g_userId, beaconId : id });
+
 
 	// debug: do something here
 	callback(null);
