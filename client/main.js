@@ -120,7 +120,7 @@ function cameraInit(){
 function positionChange(latitude, longitude, altitude){
 	camera.position.x = latitude * 1519.85;
 	camera.position.z = longitude * 1519.85;
-	camera.position.y = altitude * 1519.85;
+	camera.position.y = 1; // altitude * 1519.85;  // ignore altitude
 }
 
 function updateBeacons(newbeacons){
@@ -134,7 +134,7 @@ function updateBeacons(newbeacons){
 		var mesh = new THREE.Mesh(geo, mat);
 		mesh.position.x = beacon[0] * 1519.85;
 		mesh.position.z = beacon[1] * 1519.85;
-		mesh.position.y = beacon[2] * 1519.85;
+		mesh.position.y = 0; // beacon[2] * 1519.85;  // ignore altitude
 		scene.add(mesh);
 		beacons.push(mesh);
 	});
