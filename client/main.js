@@ -37,16 +37,15 @@ function showNotify(message){
 	$("#notify").append("<div>" + message + "</div>");
 
 	var added = $("#notify div:last")
-			.css("display", "none")
-			.fadeIn("slow")
-
-	setTimeout(function(){
-		added.fadeOut("slow", function(){
-			added.fadeOut("slow", function(){
-				added.remove();
-			});
-		});
-	}, 3000);
+		.css("display", "none")
+		.fadeIn("slow", function(){
+			setTimeout(function(){
+				added.fadeOut("slow", function(){
+					added.remove();
+				});
+			}, 3000);
+		})
+		;
 }
 
 var __confirm_callback = null;
