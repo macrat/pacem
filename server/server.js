@@ -3,6 +3,7 @@
  * 	2015 / 08 / 11
 */
 
+"use strict";
 
 /*
  *	GPS 情報関連
@@ -137,7 +138,31 @@ function doRequestSocketIo(socket)
 	});
 	// あるビーコンを検索する処理
 	socket.on("search", function(req) {
-		DEBUG("Search. " + req.id);
+		DEBUG("Search. " + req.beaconId);
+
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new Beacon();
+		db.serialize(function() {
+			// TODO: インジェクション対策
+			db.each("SELECT * FROM Beacons WHERE id=" + req.beaconId, function(err, row) {
+				tmp.userId = row.userId;
+				tmp.beaconId = row.beaconId;
+				tmp.lat = row.lat;
+				tmp.lng = row.lng;
+				tmp.alt = row.alt;
+				tmp.timestamp = row.update_date;
+			});
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+			io.sockets.emit("search-ret", { beacon:tmp });
+DEBUG("Beacon Searched.");
+		});
+
 		io.sockets.emit("search-ret", { status:"success" });
 	});
 
