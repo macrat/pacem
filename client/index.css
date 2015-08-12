@@ -43,6 +43,41 @@ canvas {
 	text-align: center;
 	font-size: 200%;
 	padding: 1em;
+	width: 100%;
+	height: 100%;
+}
+
+#confirm {
+	position: fixed;
+	z-index: 11;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0.2);
+	width: 100%;
+	height: 100%;
+	display: none;
+}
+#confirm > div {
+	padding: 2em;
+	font-size: 150%;
+	background-color: rgba(255, 255, 255, 0.8);
+	text-align: center;
+}
+#confirm_no, #confirm_yes {
+	display: inline-block;
+	padding: .1em .5em;
+	margin: 1em .5em 0;
+	color: gray;
+	background-color: rgba(255, 255, 255, 0.5);
+}
+#confirm_no:active {
+	font-size: 90%;
+	margin: 1.05em .7em .05em;
+}
+#confirm_yes:active {
+	font-size: 90%;
+	margin: 1.05em .75em .05em;
 }
 
 #openmenu {

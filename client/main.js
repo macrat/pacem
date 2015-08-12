@@ -46,6 +46,32 @@ function showNotify(message){
 	}, 3000);
 }
 
+var __confirm_callback = null;
+function confirm(message, callback){
+	$("#confirm_message").html(message);
+	__confirm_callback = callback;
+	if($("#confirm").css("display") == "none"){
+		$("#confirm")
+			.css({
+				display: "flex",
+				opacity: 0
+			})
+			.animate({ opacity: 1 }, { duration: 500 })
+	}
+}
+function confirm_callback(choice){
+	$("#confirm")
+		.stop()
+		.animate({ opacity: 0 }, {
+			duration: 500,
+			complete: function(){
+				$("#confirm").css("display", "none");
+			}
+		})
+
+	__confirm_callback(choice);
+}
+
 function cameraOpen(){
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
 
@@ -64,7 +90,13 @@ function cameraOpen(){
 				return;
 			}
 		}
-		//changeMessage("has not environment camera");  // debug commentout
+		confirm("this device hasn't out camera<br>continue without camera?", function(choice){
+			if(choice){
+				changeMessage("");
+			}else{
+				changeMessage("this device hasn't out camera");
+			}
+		});
 	});
 }
 
@@ -197,6 +229,13 @@ function guiInit(){
 			}
 			menuSlided = false;
 		})
+
+	$("#confirm_yes").click(function(){
+		confirm_callback(true);
+	});
+	$("#confirm_no").click(function(){
+		confirm_callback(false);
+	});
 }
 
 $(function(){
