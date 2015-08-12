@@ -303,6 +303,17 @@ function guiInit(){
 		$("#putbeacon").fadeIn("slow");
 		$("#putcancel").fadeOut("slow");
 	});
+	$("#beaconmenu div").click(function(){
+		putBeacon($(this).data("id"), function(){
+			showNotify("put beacon here");
+		});
+		$("#beaconmenu").animate({
+			height: 0,
+			opacity: 0
+		});
+		$("#putbeacon").fadeIn("slow");
+		$("#putcancel").fadeOut("slow");
+	});
 
 	$("#openmenu").click(function(){
 		$("#openmenu").animate({ opacity: 0 });
