@@ -148,7 +148,7 @@ function guiInit(){
 		$("#putbeacon").fadeOut("slow");
 		$("#putcancel").fadeIn("slow");
 	});
-	$("#putcancel, #sidemenu, #openmenu, canvas").click(function(){
+	$("#putcancel, #sidemenu, #openmenu, #notify").click(function(){
 		$("#beaconmenu").animate({
 			height: 0,
 			opacity: 0
@@ -161,7 +161,7 @@ function guiInit(){
 		$("#openmenu").animate({ opacity: 0 });
 		$("#sidemenu").animate({ left: 0 });
 	});
-	$("#closemenu, #putbeacon, #putcancel, #removebeacon, canvas").click(function(){
+	$("#closemenu, #putbeacon, #putcancel, #removebeacon, #notify").click(function(){
 		if(!menuSlided){
 			$("#openmenu").animate({ opacity: 1 });
 			$("#sidemenu").animate({ left: -$("#sidemenu").outerWidth() });
