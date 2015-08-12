@@ -236,6 +236,50 @@ function guiInit(){
 	$("#confirm_no").click(function(){
 		confirm_callback(false);
 	});
+
+
+	function rmBeacon(beaconid){
+		confirm("remove this beacon?", function(choice){
+			if(choice){
+				console.log("debug: beacon remove");
+			}
+		});
+	}
+
+	var hold_start = new Date();
+	var hold_item = null;
+	$("#mybeacons li")
+		.bind("touchstart", function(e){
+			hold_item = e.currentTarget;
+			hold_start = e.timeStamp;
+		})
+		.mousedown(function(e){
+			hold_item = e.currentTarget;
+			hold_start = e.timeStamp;
+		})
+		.bind("touchend", function(e){
+			hold_item = null;
+			$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
+		})
+		.mouseup(function(){
+			hold_item = null;
+			$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
+		})
+		;
+
+	(function animation(){
+		if(hold_item){
+			var duration = (new Date()) - hold_start;
+			$(hold_item).css("background-color", "rgba(0, 0, 0, " + Math.min(0.3, 0.05 + duration / 1000 / 5) + ")");
+			if(duration > 1000){
+				hold_item = null;
+				$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
+				rmBeacon($(hold_item).data("beaconid"));
+			}
+		}
+
+		requestAnimationFrame(animation);
+	})();
 }
 
 $(function(){
