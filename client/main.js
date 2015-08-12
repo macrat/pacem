@@ -144,16 +144,15 @@ function updatePosition(){
 		$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
 
 		$("#nearbeacons li, #mybeacons li").click(function(){
-			var oldid = $("#selected_beacon").data("id");
-			$("#selected_beacon").attr("id", "");
+			var oldid = $(".selected_beacon").data("id");
+			$(".selected_beacon").removeClass("selected_beacon");
 
 			if(oldid == $(this).data("id")){
 				current_beacon = null;
 			}else{
-				$(this).attr({
-						style: "",
-						id: "selected_beacon"
-					});
+				$(this)
+						.attr("style", "")
+						.addClass("selected_beacon")
 				if($(this).parent().parent().attr("id") == "mybeacons"){
 					current_beacon = mybeacon_list[$(this).data("id")];
 				}else{
@@ -163,6 +162,27 @@ function updatePosition(){
 
 			rewriteBeacons();
 		});
+
+		function down(){
+			if($(".holded_beacon").length == 0){
+				$(this)
+					.addClass("holded_beacon")
+					.css("color", "black")
+					.data("holdstart", (new Date()))
+			}
+		}
+		function up(){
+			$(".holded_beacon").removeClass("holded_beacon");
+			$("#mybeacons li").css({
+				backgroundColor: "",
+				color: ""
+			});
+		}
+		$("#mybeacons li")
+			.bind("touchstart", down)
+			.mousedown(down)
+			.bind("touchend", up)
+			.mouseup(up)
 	});
 }
 
@@ -369,39 +389,17 @@ function guiInit(){
 		});
 	}
 
-	var hold_start = new Date();
-	var hold_item = null;
-	$("#mybeacons li")
-		.bind("touchstart", function(e){
-			if(!hold_item){
-				hold_item = e.currentTarget;
-				hold_start = e.timeStamp;
-			}
-		})
-		.mousedown(function(e){
-			if(!hold_item){
-				hold_item = e.currentTarget;
-				hold_start = e.timeStamp;
-			}
-		})
-		.bind("touchend", function(e){
-			hold_item = null;
-			$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
-		})
-		.mouseup(function(){
-			hold_item = null;
-			$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
-		})
-		;
-
 	(function animation(){
-		if(hold_item){
-			var duration = (new Date()) - hold_start;
-			$(hold_item).css("background-color", "rgba(0, 0, 0, " + Math.min(0.3, 0.05 + duration / 1000 / 5) + ")");
+		if($(".holded_beacon").length > 0){
+			var duration = (new Date()) - $(".holded_beacon").data("holdstart");
+			$(".holded_beacon").css("background-color", "rgba(0, 0, 0, " + Math.min(0.3, 0.05 + duration / 1000 / 5) + ")");
 			if(duration > 1000){
-				hold_item = null;
-				$("#mybeacons li").css("background-color", "rgba(0, 0, 0, 0.05)");
-				rmBeacon($(hold_item).data("beaconid"));
+				rmBeacon($(".holded_beacon").data("beaconid"));
+				$(".holded_beacon").removeClass("holded_beacon");
+				$("#mybeacons li").css({
+					backgroundColor: "",
+					color: ""
+				});
 			}
 		}
 
