@@ -202,7 +202,7 @@ function guiInit(){
 
 	var menuSlided = false;
 	var touchX = 0;
-	$("canvas")
+	$("#notify")
 		.bind("touchstart", function(e){
 			if(e.originalEvent.changedTouches[0].pageX < 32){
 				menuSlided = true;

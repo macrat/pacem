@@ -190,6 +190,7 @@ canvas {
 }
 #beaconmenu {
 	position: fixed;
+	z-index: 2;
 	bottom: 4em;
 	right: .3em;
 	width: 3em;
