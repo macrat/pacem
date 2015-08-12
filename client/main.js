@@ -1,6 +1,7 @@
 var scene, camera, renderer, controls;
-var beacon_list = [];
+var beacon_list = {};
 var beacon_models = [];
+var mybeacon_list = {};
 var current_beacon = null;
 
 function changeMessage(message){
@@ -129,8 +130,12 @@ function updatePosition(){
 	navigator.geolocation.getCurrentPosition(function(e){
 		positionChange(e.coords.latitude, e.coords.longitude, e.coords.altitude||0);
 
-		$("#nearbeacons li").toArray().forEach(function(x){
-			var pos = beacon_list[x.dataset.id].place;
+		$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
+			if($(x).parent().parent().attr("id") == "mybeacons"){
+				var pos = mybeacon_list[x.dataset.id].place;
+			}else{
+				var pos = beacon_list[x.dataset.id].place;
+			}
 			var distance = Math.sqrt(Math.pow((pos[0]-e.coords.latitude), 2) + Math.pow((pos[1]-e.coords.longitude), 2)) * 1519.85;
 
 			$(".distance", x).text(Math.round(distance) + "m");
@@ -139,7 +144,9 @@ function updatePosition(){
 
 		$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
 
-		$("#nearbeacons li").click(function(){
+		$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+		$("#nearbeacons li, #mybeacons li").click(function(){
 			var oldid = $("#selected_beacon").data("id");
 			$("#selected_beacon").attr("id", "");
 
@@ -150,7 +157,11 @@ function updatePosition(){
 						style: "",
 						id: "selected_beacon"
 					});
-				current_beacon = beacon_list[$(this).data("id")];
+				if($(this).parent().parent().attr("id") == "mybeacons"){
+					current_beacon = mybeacon_list[$(this).data("id")];
+				}else{
+					current_beacon = beacon_list[$(this).data("id")];
+				}
 			}
 
 			rewriteBeacons();
@@ -184,6 +195,7 @@ function rewriteBeacons(){
 	beacon_models.forEach(function(model){
 		scene.remove(model);
 	});
+	beacon_models = [];
 
 	if(current_beacon){
 		putBeacon(current_beacon);
@@ -194,24 +206,31 @@ function rewriteBeacons(){
 	}
 }
 
-function updateBeacons(newbeacons){
+function updateBeacons(nearbeacons, mybeacons){
 	beacon_models.forEach(function(model){
 		scene.remove(model);
 	});
 
-	beacon_models = [];
+	function zfill(x){
+		return ("0" + x).slice(-2);
+	}
+	function makeBeaconListItem(beacon){
+		return "<li data-id='" + beacon.id + "'><div><div class='owner'>" + beacon.owner + "</div><div class='created'>" + zfill(beacon.date.getMonth()) + "/" + zfill(beacon.date.getDate()) + " " + zfill(beacon.date.getHours()) + ":" + zfill(beacon.date.getMinutes()) + "</div></div><div class='distance'></div></li>";
+	}
+
 	beacon_list = {};
+	mybeacon_list = {};
 
-	$("#nearbeacons ul").html("");
+	$("#nearbeacons ul, #mybeacons ul").html("");
 
-	newbeacons.forEach(function(beacon){
-		var place = beacon.place;
+	nearbeacons.forEach(function(beacon){
 		beacon_list[beacon.id] = beacon;
+		$("#nearbeacons ul").append(makeBeaconListItem(beacon));
+	});
 
-		function zfill(x){
-			return ("0" + x).slice(-2);
-		}
-		$("#nearbeacons ul").append("<li data-id='" + beacon.id + "'><div><div class='owner'>" + beacon.owner + "</div><div class='created'>" + zfill(beacon.date.getMonth()) + "/" + zfill(beacon.date.getDate()) + " " + zfill(beacon.date.getHours()) + ":" + zfill(beacon.date.getMinutes()) + "</div></div><div class='distance'></div></li>");
+	mybeacons.forEach(function(beacon){
+		mybeacon_list[beacon.id] = beacon;
+		$("#mybeacons ul").append(makeBeaconListItem(beacon));
 	});
 
 	rewriteBeacons();
@@ -334,14 +353,6 @@ function guiInit(){
 	});
 
 
-	$("#mybeacons li").click(function(){
-		$(".beaconlist li").attr("id", "");
-		$(this).attr("style", "");
-		$(this).attr("id", "selected_beacon");
-		showNotify("select mybeacon is not implemented");
-	});
-
-
 	function rmBeacon(beaconid){
 		confirm("remove this beacon?", function(choice){
 			if(choice){
@@ -409,16 +420,25 @@ $(function(){
 		var alt = e.coords.altitude;
 		console.log(lat, lng, alt);
 
-		var ls = [];
-		for(var i=0; i<100; i++){
-			ls.push({
+		var near = [];
+		for(var i=0; i<50; i++){
+			near.push({
 				id: i,
 				place: [lat+(Math.random()*0.04-0.02), lng+(Math.random()*0.04-0.02), 0],
 				owner: ["this", "is", "test"][i%3],
 				date: new Date((new Date()) - Math.random()*1000*60*60*24*7)
 			});
 		}
-		updateBeacons(ls);
+		var my = [];
+		for(var i=0; i<3; i++){
+			my.push({
+				id: i+100,
+				place: [lat+(Math.random()*0.1-0.05), lng+(Math.random()*0.1-0.05), 0],
+				owner: "your name",
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*30)
+			});
+		}
+		updateBeacons(near, my);
 
 		if($("#loading").length > 0){
 			changeMessage("");
