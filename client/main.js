@@ -72,8 +72,25 @@ function confirm_callback(choice){
 	__confirm_callback(choice);
 }
 
-function cameraOpen(){
+function cameraInit(){
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
+
+	function openFailed(message, detail){
+		confirm(message + "<br>continue without camera?", function(choice){
+			if(choice){
+				if($("#loading").length == 0){
+					changeMessage("");
+				}
+			}else{
+				changeMessage(message + (detail?"<br>" + detail:""));
+			}
+		});
+	}
+
+	if(!navigator.getUserMedia){
+		openFailed("this browser doesn't support user stream API");
+		return;
+	}
 
 	MediaStreamTrack.getSources(function(data){
 		for(var i in data){
@@ -83,20 +100,20 @@ function cameraOpen(){
 						optional: [{ sourceId: data[i].id }]
 					} },
 					function(stream){
-						document.querySelector('video').src = window.URL.createObjectURL(stream);
+						document.querySelector("video").src = window.URL.createObjectURL(stream);
 					},
-					console.log
+					function(e){
+						if(e.name == "PermissionDeniedError"){
+							openFailed("camera access blocked", "please check browser settings");
+						}else{
+							openFailed("this device hasn't out camera");
+						}
+					}
 				);
 				return;
 			}
 		}
-		confirm("this device hasn't out camera<br>continue without camera?", function(choice){
-			if(choice){
-				changeMessage("");
-			}else{
-				changeMessage("this device hasn't out camera");
-			}
-		});
+		openFailed("this device hasn't out camera");
 	});
 }
 
@@ -126,8 +143,6 @@ function updateBeacons(newbeacons){
 }
 
 function threeInit(){
-	cameraOpen();
-
 	scene = new THREE.Scene();
 
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -295,6 +310,7 @@ $(function(){
 		$("#loading").animate({ opacity: target_opacity }, { duration: 2000, complete: loadingAnimation });
 	})();
 
+	cameraInit();
 	threeInit();
 	guiInit();
 
@@ -314,6 +330,6 @@ $(function(){
 			changeMessage("");
 		}
 	}, function(){
-		changeMessage("get location failed.");
+		changeMessage("get location failed<br>please check device settings");
 	});
 });
