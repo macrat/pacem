@@ -250,12 +250,16 @@ function guiInit(){
 	var hold_item = null;
 	$("#mybeacons li")
 		.bind("touchstart", function(e){
-			hold_item = e.currentTarget;
-			hold_start = e.timeStamp;
+			if(!hold_item){
+				hold_item = e.currentTarget;
+				hold_start = e.timeStamp;
+			}
 		})
 		.mousedown(function(e){
-			hold_item = e.currentTarget;
-			hold_start = e.timeStamp;
+			if(!hold_item){
+				hold_item = e.currentTarget;
+				hold_start = e.timeStamp;
+			}
 		})
 		.bind("touchend", function(e){
 			hold_item = null;
