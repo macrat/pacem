@@ -204,7 +204,7 @@ module.exports = function(server){
 
 		// ユーザー情報の変更
 		socket.on("update-user-info", function(req) {
-			if (!req.data) {
+			if (!req) {
 	DEBUG("[update-user-info]\tparameter is unjust.");
 				io.sockets.emit("update-user-info-ret", "parameter is unjust.");
 				return;
@@ -216,11 +216,11 @@ module.exports = function(server){
 			// 2 パスワードのみ変更
 			// 3 名前とパスワードを変更
 			var cState = 0;
-			if (req.data.name) {
+			if (req.name) {
 				// 名前の変更あり
 				cState = 1;
 			}
-			if (req.data.pass) {
+			if (req.pass) {
 				// パスワードの変更あり
 				if (cState == 1) {
 					// 名前とパスワードの変更
@@ -243,7 +243,7 @@ module.exports = function(server){
 				var stmt;
 				if (cState == 3) {
 					stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.data.name, req.data.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.name, req.pass, g_userInfo.name, g_userInfo.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name or password.";
 						}
@@ -251,7 +251,7 @@ module.exports = function(server){
 				}
 				else if (cState == 2) {
 					stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.data.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.pass, g_userInfo.name, g_userInfo.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user password.";
 						}
@@ -259,7 +259,7 @@ module.exports = function(server){
 				}
 				else if (cState == 1) {
 					stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.data.name, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.name, g_userInfo.name, g_userInfo.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name.";
 						}
@@ -335,15 +335,34 @@ module.exports = function(server){
 
 			var db = new sqlite3.Database(fileDb);
 			var emsg = "";
+			var tmp;
 			db.serialize(function() {
-				var stmt = db.prepare("INSERT INTO Users (pass, name) VALUES (?,?)");
-				// ユーザー追加
-				stmt.run(req.pass, req.name, function(err) {
-					if (err) {
-						emsg = "User name conflict.";
+				db.each("SELECT * FROM Users WHERE name != ?", req.name, function(err, row) {
+					db.run("INSERT INTO Users (pass, name) VALUES (?,?)", req.pass, req.name, function(err){
+						if(err){
+							io.sockets.emit("user-add-ret", { status:0, msg:"User name conflict." });
+						}
+						else {
+							db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
+								tmp = new UserInfo(row.id, row.pass, row.name, row.update_date);
+								io.sockets.emit("user-add-ret", { status:1, userinfo : tmp });
+							}, function (err, rownum) {
+								if (err) {
+									io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id" });
+								}
+								else if (rownum == 0) {
+									io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id" });
+								}
+							});
+						}
+					});
+				}, function(err, rownum){
+					if(err){
+						io.sockets.emit("user-add-ret", { status:0, msg:"unknown error" });
+					}else if(rownum == 0){
+						io.sockets.emit("user-add-ret", { status:0, msg:"username is unjust." });
 					}
 				});
-				stmt.finalize();
 			});
 			db.close(function(err) {
 				if (emsg.length > 0) {
@@ -351,7 +370,7 @@ module.exports = function(server){
 					return;
 				}
 
-				io.sockets.emit("user-add-ret", { status:1 });
+				// io.sockets.emit("user-add-ret", { status:1 });
 			});
 		});
 		// NAME と PASS が正しいか否かを判定
