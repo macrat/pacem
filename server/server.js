@@ -20,7 +20,7 @@ var isExistsDb = fs.existsSync(fileDb);
 if (!isExistsDb) {
 	var db = new sqlite3.Database(fileDb);
 	db.serialize(function() {
-		db.run("create table Beacons(id integer primary key, userId INTEGER, lat REAL, lng REAL, alt REAL, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
+		db.run("create table Beacons(id integer primary key, userId INTEGER, lat REAL, lng REAL, alt REAL, type INTEGER, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
 		db.run("create table Users(id integer primary key, pass TEXT, name TEXT UNIQUE, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
 	});
 	db.close();
@@ -36,14 +36,14 @@ io.sockets.on("connection", doRequestSocketIo);
 
 
 // ビーコン情報構造体
-function Beacon(userId, beaconId, lat, lng, alt, timestamp)
+function Beacon(userId, beaconId, lat, lng, alt, type, timestamp)
 {
 	this.userId = userId;
 	this.beaconId = beaconId;
 	this.lat = lat;
 	this.lng = lng;
 	this.alt = alt;
-	this.type = 0;
+	this.type = type;
 	this.timestamp = timestamp;
 }
 
@@ -79,7 +79,7 @@ function RegistSocketAPI(socket)
 		db.close();
 
 		var timestamp = Math.floor( new Date().getTime() / 1000 );
-		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, timestamp);
+		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, req.type, timestamp);
 		g_beaconDB.push(tmp);
 		io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 	});
@@ -92,7 +92,7 @@ function RegistSocketAPI(socket)
 		db.serialize(function() {
 			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
 //				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 			});
 		});
 		db.close(function(err) {
@@ -124,7 +124,7 @@ function RegistSocketAPI(socket)
 		var tmp = new Array();
 		db.serialize(function() {
 			db.each("SELECT * FROM Beacons WHERE userId=?", g_userInfo.id, function(err, row) {
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 			});
 		});
 		db.close(function(err) {
@@ -151,6 +151,7 @@ function RegistSocketAPI(socket)
 					tmp.lat = row.lat;
 					tmp.lng = row.lng;
 					tmp.alt = row.alt;
+					tmp.type = row.type;
 					tmp.timestamp = row.update_date;
 				}
 			});
@@ -376,7 +377,7 @@ DEBUG("[user-add]\tparameter is unjust.");
 		db.serialize(function() {
 			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
 // console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 			});
 			db.each("SELECT id, pass, name, update_date FROM Users", function(err, row) {
 console.log(row.id + ": name=" + row.name + ", pass=" + row.pass + "  [" + row.update_date + "]");
