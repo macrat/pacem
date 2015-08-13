@@ -47,6 +47,7 @@ canvas {
 	text-align: center;
 	font-size: 200%;
 	padding: 1em;
+	margin: .25em;
 }
 
 #account, #confirm {
