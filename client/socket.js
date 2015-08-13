@@ -42,7 +42,8 @@ function updateUserInfo(data, callback){
 	// update user information.
 	//
 	// data -- new user information.
-	//  name -- new user name.
+	//  name -- new user name. if null, don't change.
+	//  password -- new password. if null, don't change.
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 

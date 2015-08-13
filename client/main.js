@@ -475,29 +475,37 @@ function guiInit(){
 			$("#account").css("display", "none");
 		});
 
-		if($("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != ""){
+		if(($("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != "") || $("#changeid_password").val() != ""){
 			updateUserInfo({
-					name: $("#changeid_username").val()
+					name: $("#changeid_username").val() || null,
+					password: $("#changeid_password").val() || null
 				}, function(err){
 					if(err){
-						showNotify("failed change name<br>" + err);
+						showNotify("failed change account info<br>" + err);
 					}else{
-						showNotify("changed name");
+						showNotify("success");
 						$("#username span").text(getUserInfo().name);
 					}
 				});
 		}
 	}
 	$("#changeid_button").click(changeName);
-	$("#changeid_username").keyup("input", function(e){
+	$("#changeid input").keyup("input", function(e){
 		if(e.keyCode == 13){
 			changeName();
 		}else{
 			setTimeout(function(){
-				if($("#changeid_username").val() == getUserInfo().name || $("#changeid_username").val() == ""){
-					$("#changeid_button").text("cancel");
-				}else{
+				var name_changed = $("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != "";
+				var pass_changed = $("#changeid_password").val() != "";
+
+				if(name_changed && pass_changed){
+					$("#changeid_button").text("change ID/password");
+				}else if(name_changed){
 					$("#changeid_button").text("change ID");
+				}else if(pass_changed){
+					$("#changeid_button").text("change password");
+				}else{
+					$("#changeid_button").text("cancel");
 				}
 			}, 100);
 		}
