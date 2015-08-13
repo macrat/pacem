@@ -1,4 +1,5 @@
 syntax: glob
 *.swp
 node_modules/
+npm-debug.log
 server/test.db
