@@ -273,7 +273,7 @@ DEBUG("[user-delete]\tparameter is unjust.");
 					__pass = row.pass;
 					tmp.name = row.name;
 					tmp.timestamp = row.update_date;
-console.log(tmp);
+// console.log(tmp);
 					return;
 				}
 			});
@@ -295,9 +295,63 @@ console.log(tmp);
 	});
 	// パスワード変更
 	socket.on("user-change-pass", function(req) {
+		if (req.pass.length == 0 || req.npass.length == 0 || req.name.length == 0) {
+DEBUG("[user-change-pass]\tparameter is unjust.");
+			io.sockets.emit("user-change-pass-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
+			// ユーザー追加
+			stmt.run(req.npass, req.name, req.pass, function(err) {
+				if (err) {
+					emsg = "Can't change user password.";
+				}
+			});
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				io.sockets.emit("user-change-pass-ret", { status:0, msg:emsg });
+				return;
+			}
+
+			io.sockets.emit("user-change-pass-ret", { status:1 });
+		});
 	});
 	// ユーザー名変更
 	socket.on("user-change-name", function(req) {
+		if (req.name.length == 0 || req.nname.length == 0 || req.pass.length == 0) {
+DEBUG("[user-change-name]\tparameter is unjust.");
+			io.sockets.emit("user-change-name-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
+			// ユーザー追加
+			stmt.run(req.nname, req.name, req.pass, function(err) {
+				if (err) {
+					emsg = "Can't change user name.";
+				}
+			});
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				io.sockets.emit("user-change-name-ret", { status:0, msg:emsg });
+				return;
+			}
+
+			io.sockets.emit("user-change-name-ret", { status:1 });
+		});
 	});
 
 

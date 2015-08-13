@@ -15,10 +15,10 @@
 
 	$(document).ready(function() {
 		$("#add-user").click(function() {
-			UserAdd($("#input-user-add-pass").val(), $("#input-user-add-name").val(), function(data) {
-				if (data.status == 0) {
+			UserAdd($("#input-user-add-pass").val(), $("#input-user-add-name").val(), function(err) {
+				if (err) {
 					// err
-					$("#user-add-logs").text("ERROR:Can't add user.[" + data.msg + "]");
+					$("#user-add-logs").text("ERROR:Can't add user.[" + err + "]");
 					return;
 				}
 
@@ -39,16 +39,31 @@
 		});
 
 		$("#delete-user").click(function() {
-			UserDelete($("#input-user-delete-pass").val(), $("#input-user-delete-name").val(), function(data) {
-				if (data.status == 0) {
+			UserDelete($("#input-user-delete-pass").val(), $("#input-user-delete-name").val(), function(err) {
+				if (err) {
 					// err
-					$("#user-delete-logs").text("ERROR:Can't delete user.[" + data.msg + "]");
+					$("#user-delete-logs").text("ERROR:Can't delete user.[" + err + "]");
 					return;
 				}
 
 				$("#user-delete-logs").text("success.");
 				$("#input-user-delete-pass").val("");
 				$("#input-user-delete-name").val("");
+			});
+		});
+
+		$("#user-change-name").click(function() {
+			__UserChangeName($("#input-user-change-name-old-name").val(), $("#input-user-change-name-new-name").val(), $("#input-user-change-name-pass").val(), function(err){
+				$("#user-change-name-logs").text("");
+				if (err) {
+					$("#user-change-name-logs").text("err:"+err);
+					return;
+				}
+
+				$("#user-change-name-logs").text("success");
+				$("#input-user-change-name-old-name").val("");
+				$("#input-user-change-name-new-name").val("");
+				$("#input-user-change-name-pass").val("");
 			});
 		});
 	});
@@ -77,5 +92,12 @@
 	PASS:<input type="text" id="input-user-delete-pass"><br>
 	<button id="delete-user">Delete</button>
 	<div id="user-delete-logs"></div>
+	<hr>
+	<h2>Change User Name</h2>
+	OLD-NAME:<input type="text" id="input-user-change-name-old-name"><br>
+	NEW-NAME:<input type="text" id="input-user-change-name-new-name"><br>
+	PASS:<input type="text" id="input-user-change-name-pass"><br>
+	<button id="user-change-name">ChangeName</button>
+	<div id="user-change-name-logs"></div>
 </body>
 </html>

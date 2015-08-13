@@ -22,12 +22,9 @@ function UserAdd(pPass, pName, callback)
 	// User add.
 	//
 	// callback -- callback function.
-	//  data.status	-> 0 : err
-	//		-> 1 : success
-	//  data.mesg -- err message.
 	g_socket.emit("user-add", { pass:pPass, name:pName });
 	g_socket.on("user-add-ret", function (data) {
-		callback(data, null);
+		callback(data.msg, null);
 	});
 }
 
@@ -37,11 +34,19 @@ function UserDelete(pPass, pName, callback)
 	// User delete
 	//
 	// callback -- callback function.
-	//  data.status	-> 0 : err
-	//		-> 1 : success.
 	g_socket.emit("user-delete", { pass:pPass, name:pName });
 	g_socket.on("user-delete-ret", function (data) {
-		callback(data, null);
+		callback(data.msg, null);
+	});
+}
+
+
+// 仕様変更がリリース版ではあるため使うな。
+function __UserChangeName(oldName, newName, pPass, callback)
+{
+	g_socket.emit("user-change-name", { pass:pPass, name:oldName, nname:newName });
+	g_socket.on("user-change-name-ret", function (data) {
+		callback(data.msg, null);
 	});
 }
 
@@ -103,34 +108,18 @@ function getNearBeacons(callback){
 	//
 	// callaback -- callback function.
 	//  beacons -- list of beacon information.
-	//   id -- beacon's id
-	//   place -- [latitude, longitude, altitude]
-	//   owner -- beacon owner name.
-	//   date -- beacon established date time.
-	//  err -- error message string. if success, this is null.
+	//   beaconId -- beacon's id
+	//   lat
+	//   lng
+	//   alt
+	//   userId -- beacon owner id.
+	//   timestamp -- beacon established date time.
 
 
 	g_socket.emit("get", { lat : g_lat, lng : g_lng });
 	g_socket.on("get-ret", function (data) {
 		callback(data.beacons, null);
 	});
-
-
-	// debug: do something here
-/*	callback([
-		{
-			id: 0,
-			place: [100, 200, 300],
-			owner: "owner",
-			date: (new Date())
-		},
-		{
-			id: 1,
-			place: [300, 200, 100],
-			owner: "name",
-			date: (new Date())
-		}
-	], null);*/
 }
 
 
