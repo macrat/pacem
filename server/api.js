@@ -65,15 +65,13 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
 				// ビーコン追加サンプル
-				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)");
-				stmt.run(user_info.id, req.lat, req.lng, req.alt, req.type, function(err){
+				db.run("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)", user_info.id, req.lat, req.lng, req.alt, req.type, function(err){
 					if(err){
 						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
 					}else{
 						io.sockets.emit("set-ret", { status:1, msg: null });
 					}
 				});
-				stmt.finalize();
 			});
 			db.close();
 		});
@@ -146,13 +144,11 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			var emsg = "";
 			db.serialize(function() {
-				var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.npass, user_info.name, user_info.pass, function(err) {
+				db.run("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?", req.npass, user_info.name, user_info.pass, function(err) {
 					if (err) {
 						emsg = "internal server error";
 					}
 				});
-				stmt.finalize();
 			});
 			db.close(function(err) {
 				if (emsg.length > 0) {
@@ -175,13 +171,11 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			var emsg = "";
 			db.serialize(function() {
-				var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.nname, user_info.name, user_info.pass, function(err) {
+				db.run("UPDATE Users SET name = ? WHERE name == ? AND pass == ?", req.nname, user_info.name, user_info.pass, function(err) {
 					if (err) {
 						emsg = "internal server error";
 					}
 				});
-				stmt.finalize();
 			});
 			db.close(function(err) {
 				if (emsg.length > 0) {
@@ -206,44 +200,41 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 
 			db.serialize(function() {
-				db.each("SELECT * from Ussers WHERE name==?", req.name, function(err, row){}, function(err, rownum){
-					if(rownum > 0){
-						io.sockets.emit("update-user-info-ret", "new name is already exists");
-						return;
-					}
+				if(req.name){
+					db.each("SELECT * from Ussers WHERE name==?", req.name, function(err, row){}, function(err, rownum){
+						if(rownum > 0){
+							io.sockets.emit("update-user-info-ret", "new name is already exists");
+							return;
+						}
 
-					if (req.name && req.pass) {
-						stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
-						stmt.run(req.name, req.pass, user_info.name, user_info.pass, function(err) {
-							if(err){
-								io.sockets.emit("update-user-info-ret", "internal server error");
-							}else{
-								io.sockets.emit("update-user-info-ret", null);
-							}
-						});
-					}
-					else if (req.name) {
-						stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-						stmt.run(req.pass, user_info.name, user_info.pass, function(err) {
-							if (err) {
-								io.sockets.emit("update-user-info-ret", "internal server error");
-							}else{
-								io.sockets.emit("update-user-info-ret", null);
-							}
-						});
-					}
-					else if (req.pass) {
-						stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-						stmt.run(req.name, user_info.name, user_info.pass, function(err) {
-							if (err) {
-								io.sockets.emit("update-user-info-ret", "internal server error");
-							}else{
-								io.sockets.emit("update-user-info-ret", null);
-							}
-						});
-					}
-					stmt.finalize();
-				});
+						if (req.pass) {
+							db.run("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?", req.name, req.pass, user_info.name, user_info.pass, function(err) {
+								if(err){
+									io.sockets.emit("update-user-info-ret", "internal server error");
+								}else{
+									io.sockets.emit("update-user-info-ret", null);
+								}
+							});
+						}
+						else {
+							db.run("UPDATE Users SET name = ? WHERE name == ? AND pass == ?", req.name, user_info.name, user_info.pass, function(err) {
+								if (err) {
+									io.sockets.emit("update-user-info-ret", "internal server error");
+								}else{
+									io.sockets.emit("update-user-info-ret", null);
+								}
+							});
+						}
+					});
+				}else if (req.pass) {
+					db.run("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?", req.pass, user_info.name, user_info.pass, function(err) {
+						if (err) {
+							io.sockets.emit("update-user-info-ret", "internal server error");
+						}else{
+							io.sockets.emit("update-user-info-ret", null);
+						}
+					});
+				}
 			});
 		});
 
