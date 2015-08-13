@@ -238,28 +238,22 @@ DEBUG("[user-delete]\tparameter is unjust.");
 
 
 		var db = new sqlite3.Database(fileDb);
-		var emsg = "";
 		db.serialize(function() {
-			// ユーザー削除
-			var stmt = db.prepare("DELETE FROM Users WHERE name = ? AND pass = ?");
-			stmt.run(req.name, req.pass, function(err) {
-				// TODO: 存在しないユーザーを削除してもエラーにならないのを何とかする。
-
-				if (err) {
-					emsg = "Can't delete user.";
+			db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", req.name, req.pass, function(err, row){
+				db.run("DELETE FROM Users WHERE name == ?", req.name, function(err){
+					if(err){
+						io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
+					}else{
+						io.sockets.emit("user-delete-ret", { status:1 });
+					}
+				})
+			}, function(err, rownum){
+				if(err){
+					io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
+				}else if(rownum == 0){
+					io.sockets.emit("user-delete-ret", { status:0, msg:"incorrect user name or password" });
 				}
-console.log(err);
 			});
-			stmt.finalize();
-		});
-		db.close(function(err) {
-			if (emsg.length > 0) {
-				console.error(emsg);
-				io.sockets.emit("user-delete-ret", { status:0, msg:emsg });
-				return;
-			}
-
-			io.sockets.emit("user-delete-ret", { status:1 });
 		});
 	});
 	// NAME と PASS が正しいか否かを判定
