@@ -1,7 +1,7 @@
 // connection server
 
 
-var g_socket = io.connect("http://192.168.11.4:3000/");
+var g_socket = io.connect("http://localhost:3000/");
 var g_userId = 0;
 var g_userName = "";
 

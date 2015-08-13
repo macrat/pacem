@@ -1,4 +1,4 @@
-var scene, camera, renderer, controls;
+var scene, camera, renderer;
 var beacon_list = {};
 var beacon_models = [];
 var mybeacon_list = {};
@@ -352,7 +352,7 @@ function threeInit(){
 	scene = new THREE.Scene();
 
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-	controls = new THREE.DeviceOrientationControls(camera);
+	var controls = new THREE.DeviceOrientationControls(camera);
 
 	renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 	renderer.setClearColor(0x000000, 0);
