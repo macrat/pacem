@@ -104,6 +104,10 @@ function getNearBeacons(callback){
 		g_socket.emit("get", { lat : position.coords.latitude, lng : position.coords.longitude });
 		function cb(data) {
 			g_socket.removeListener("get-ret", cb);
+			if (!data.status) {
+				callback(null, data.msg);
+				return;
+			}
 
 			var ls = [];
 
@@ -133,6 +137,11 @@ function getMyBeacons(callback){
 	g_socket.emit("get-my-beacons", {});
 	function cb(data) {
 		g_socket.removeListener("get-my-beacons-ret", cb);
+		if (!data.status) {
+			callback(null, data.msg);
+			return;
+		}
+
 
 		var ls = [];
 

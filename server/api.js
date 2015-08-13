@@ -108,10 +108,11 @@ module.exports = function(server){
 			db.close(function(err) {
 				if (err) {
 					console.error(err.message);
+					io.sockets.emit("get-my-beacons-ret", { status:0, msg:err.message });
 					return;
 				}
 
-				io.sockets.emit("get-my-beacons-ret", { beacons:tmp });
+				io.sockets.emit("get-my-beacons-ret", { status:1, beacons:tmp });
 			});
 		});
 		// ユーザーの作成した特定のビーコンを削除する処理
@@ -434,12 +435,14 @@ module.exports = function(server){
 				}, function(err){
 					if (err) {
 						console.log(err);
+						io.sockets.emit("get-ret", { status:0, msg:err.message });
 					}
 				});
 			});
 			db.close(function(err) {
 				if (err) {
 					console.error(err.message);
+					io.sockets.emit("get-ret", { status:0, msg:err.message });
 					return;
 				}
 
@@ -457,7 +460,7 @@ module.exports = function(server){
 				}
 
 
-				io.sockets.emit("get-ret", { beacons:tmp2 });
+				io.sockets.emit("get-ret", { status:1, beacons:tmp2 });
 			});
 		});
 
