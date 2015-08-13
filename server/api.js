@@ -335,43 +335,35 @@ module.exports = function(server){
 
 			var db = new sqlite3.Database(fileDb);
 			var emsg = "";
-			var tmp;
+			var tmp = new UserInfo();
 			db.serialize(function() {
-				db.each("SELECT * FROM Users WHERE name != ?", req.name, function(err, row) {
-					db.run("INSERT INTO Users (pass, name) VALUES (?,?)", req.pass, req.name, function(err){
-						if(err){
-							io.sockets.emit("user-add-ret", { status:0, msg:"User name conflict." });
+				db.run("INSERT INTO Users (pass, name) VALUES (?,?)", req.pass, req.name, function(err){
+					if(err){
+						io.sockets.emit("user-add-ret", { status:0, msg:err.message, userinfo : tmp });
+						return;
+					}
+
+					db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
+						var u = new UserInfo(row.id, 0, row.name, row.update_date);
+						io.sockets.emit("user-add-ret", { status:1, userinfo : u });
+					}, function (err, rownum) {
+						if (err) {
+							io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
 						}
-						else {
-							db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
-								tmp = new UserInfo(row.id, row.pass, row.name, row.update_date);
-								io.sockets.emit("user-add-ret", { status:1, userinfo : tmp });
-							}, function (err, rownum) {
-								if (err) {
-									io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id" });
-								}
-								else if (rownum == 0) {
-									io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id" });
-								}
-							});
+						else if (rownum == 0) {
+							io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
 						}
 					});
-				}, function(err, rownum){
-					if(err){
-						io.sockets.emit("user-add-ret", { status:0, msg:"unknown error" });
-					}else if(rownum == 0){
-						io.sockets.emit("user-add-ret", { status:0, msg:"username is unjust." });
-					}
 				});
 			});
-			db.close(function(err) {
+/*			db.close(function(err) {
 				if (emsg.length > 0) {
-					io.sockets.emit("user-add-ret", { status:0, msg:emsg });
+					io.sockets.emit("user-add-ret", { status:0, msg:emsg, userinfo : tmp });
 					return;
 				}
 
 				// io.sockets.emit("user-add-ret", { status:1 });
-			});
+			});*/
 		});
 		// NAME と PASS が正しいか否かを判定
 		socket.on("user-verify", function(req) {
@@ -380,7 +372,7 @@ module.exports = function(server){
 			var tmp = new UserInfo();
 			var __pass = "";
 			db.serialize(function() {
-				db.each("SELECT * FROM Users WHERE name=?", req.name, function(err, row) {
+				db.each("SELECT * FROM Users WHERE name==?", req.name, function(err, row) {
 					if(err) {
 						console.log("error: " + err);
 					}
