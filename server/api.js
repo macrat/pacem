@@ -12,10 +12,9 @@ module.exports = function(server){
 	var sqlite3 = require("sqlite3").verbose();
 
 	var fileDb = "test.db";
-	var isExistsDb = fs.existsSync(fileDb);
 
 	// テーブル作成処理のみ
-	if (!isExistsDb) {
+	if (!fs.existsSync(fileDb)) {
 		var db = new sqlite3.Database(fileDb);
 		db.serialize(function() {
 			db.run("create table Beacons(id integer primary key, userId INTEGER, lat REAL, lng REAL, alt REAL, type INTEGER, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
@@ -151,12 +150,11 @@ module.exports = function(server){
 				});
 			});
 			db.close(function(err) {
-				if (emsg.length > 0) {
+				if(emsg){
 					io.sockets.emit("user-change-pass-ret", { status:0, msg:emsg });
-					return;
+				}else{
+					io.sockets.emit("user-change-pass-ret", { status:1 });
 				}
-
-				io.sockets.emit("user-change-pass-ret", { status:1 });
 			});
 		});
 		// ユーザー名変更
@@ -178,12 +176,11 @@ module.exports = function(server){
 				});
 			});
 			db.close(function(err) {
-				if (emsg.length > 0) {
+				if(emsg){
 					io.sockets.emit("user-change-name-ret", { status:0, msg:emsg });
-					return;
+				}else{
+					io.sockets.emit("user-change-name-ret", { status:1 });
 				}
-
-				io.sockets.emit("user-change-name-ret", { status:1 });
 			});
 		});
 
@@ -293,50 +290,39 @@ module.exports = function(server){
 
 
 			var db = new sqlite3.Database(fileDb);
-			var emsg = "";
-			var tmp = new UserInfo();
 			db.serialize(function() {
 				db.run("INSERT INTO Users (pass, name) VALUES (?,?)", req.pass, req.name, function(err){
 					if(err){
 						if(err.message.search("UNIQUE") >= 0){
-							io.sockets.emit("user-add-ret", { status:0, msg:"this user name already exists", userinfo : tmp });
+							io.sockets.emit("user-add-ret", { status:0, msg:"this user name already exists" });
 						}else{
-							io.sockets.emit("user-add-ret", { status:0, msg:"internal server error", userinfo : tmp });
+							io.sockets.emit("user-add-ret", { status:0, msg:"internal server error" });
 						}
-						return;
-					}
-
-					db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
-						io.sockets.emit("user-add-ret", { status:1, userinfo: {
-							id: row.id,
-							name: row.name,
-							timestamp: row.update_date
-						} });
-
-						if (!socket.flagLogin) {
-							RegistSocketAPI(socket, {
+					}else{
+						db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
+							io.sockets.emit("user-add-ret", { status:1, userinfo: {
 								id: row.id,
 								name: row.name,
-								timestamp: row.update_date,
-								pass: row.pass
-							});
-							socket.flagLogin = 1;
-						}
-					}, function (err, rownum) {
-						if(err || rownum == 0){
-							io.sockets.emit("user-add-ret", { status:0, msg:"unknown error", userinfo : tmp });
-						}
-					});
+								timestamp: row.update_date
+							} });
+
+							if (!socket.flagLogin) {
+								RegistSocketAPI(socket, {
+									id: row.id,
+									name: row.name,
+									timestamp: row.update_date,
+									pass: row.pass
+								});
+								socket.flagLogin = 1;
+							}
+						}, function (err, rownum) {
+							if(err || rownum == 0){
+								io.sockets.emit("user-add-ret", { status:0, msg:"unknown error" });
+							}
+						});
+					}
 				});
 			});
-/*			db.close(function(err) {
-				if (emsg.length > 0) {
-					io.sockets.emit("user-add-ret", { status:0, msg:emsg, userinfo : tmp });
-					return;
-				}
-
-				// io.sockets.emit("user-add-ret", { status:1 });
-			});*/
 		});
 		// NAME と PASS が正しいか否かを判定
 		socket.on("user-verify", function(req) {
@@ -450,68 +436,19 @@ module.exports = function(server){
 				});
 			});
 			db.close(function(err) {
-				if (err) {
+				if(err){
 					console.error(err.message);
-					return;
+				}else{
+					io.sockets.emit("search-ret", { beacon:tmp });
 				}
-
-				io.sockets.emit("search-ret", { beacon:tmp });
 	DEBUG("Beacon Searched.");
 			});
 		});
-
-		// DEBUG 用
-		socket.on("get-db", function(req) {
-			DEBUG("get db");
-
-			var db = new sqlite3.Database(fileDb);
-			var tmp = new Array();
-			var tmp2 = new Array();
-			db.serialize(function() {
-				db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
-	// console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-					tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
-				});
-				db.each("SELECT id, pass, name, update_date FROM Users", function(err, row) {
-	console.log(row.id + ": name=" + row.name + ", pass=" + row.pass + "  [" + row.update_date + "]");
-					tmp2.push(new UserInfo(row.id, row.pass, row.name, row.update_date));
-				});
-			});
-			db.close(function(err) {
-				if (err) {
-					console.error(err.message);
-					return;
-				}
-
-				io.sockets.emit("get-db-ret", { db : tmp, db2 : tmp2 });
-			});
-		});
-		return;
 	}
 
 
 	function DEBUG(msg)
 	{
 		console.log(msg);
-	}
-
-
-	function PRINT_DB()
-	{
-		var db = new sqlite3.Database(fileDb);
-		db.serialize(function() {
-			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
-	console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-			});
-			db.each("SELECT id, pass, name, update_date FROM Users", function(err, row) {
-	console.log(row.id + ": name=" + row.name + ", pass=" + row.pass + "  [" + row.update_date + "]");
-			});
-		});
-		db.close(function(err) {
-			if (err) {
-				console.error(err.message);
-				return;
-			}
-		});
 	}
 };
