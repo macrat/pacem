@@ -4,6 +4,10 @@ var beacon_models = [];
 var mybeacon_list = {};
 var current_beacon = null;
 
+function location2meter(x){
+	return x * 1519.85;
+}
+
 function changeMessage(message){
 	var dest = $("#message");
 	if(message == ""){
@@ -165,8 +169,8 @@ function updateIndicator(position, orient){
 }
 
 function updatePosition(position){
-	camera.position.x = position.coords.latitude * 1519.85;
-	camera.position.z = position.coords.longitude * 1519.85;
+	camera.position.x = location2meter(position.coords.latitude);
+	camera.position.z = location2meter(position.coords.longitude);
 	camera.position.y = 1;
 
 	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
@@ -175,10 +179,10 @@ function updatePosition(position){
 		}else{
 			var pos = beacon_list[x.dataset.id].place;
 		}
-		var distance = Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)) * 1519.85;
+		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
 
 		$(".distance", x).text(Math.round(distance) + "m");
-		$(x).data("distance", distance)
+		$(x).attr("data-distance", distance)
 	});
 
 	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
@@ -233,23 +237,27 @@ function updatePosition(position){
 }
 
 function rewriteBeacons(){
-	var geo = new THREE.OctahedronGeometry(1);
+	var geo = new THREE.OctahedronGeometry(0.5);
 	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-	var fill = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 });
+	var fills = [
+		new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 }),
+		new THREE.MeshBasicMaterial({ color: 0x00ff00, opacity: 0.3 }),
+		new THREE.MeshBasicMaterial({ color: 0x0000ff, opacity: 0.3 }),
+	];
 
 	function putBeacon(beacon){
 		var place = beacon.place;
 
 		var mesh = new THREE.Mesh(geo, frame);
-		mesh.position.x = place[0] * 1519.85;
-		mesh.position.z = place[1] * 1519.85;
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
 
-		var mesh = new THREE.Mesh(geo, fill);
-		mesh.position.x = place[0] * 1519.85;
-		mesh.position.z = place[1] * 1519.85;
+		var mesh = new THREE.Mesh(geo, fills[beacon.type]);
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
@@ -405,9 +413,13 @@ function guiInit(){
 		$("#putcancel").fadeOut("slow");
 	});
 	$("#beaconmenu div").click(function(){
-		putBeacon($(this).data("type"), function(){
-			showNotify("put beacon here");
-		});
+		if($("#mybeacons li:first").data("distance") < 3){
+			showNotify("too near your beacon");
+		}else{
+			putBeacon($(this).data("type"), function(){
+				showNotify("put beacon here");
+			});
+		}
 		$("#beaconmenu").animate({
 			height: 0,
 			opacity: 0

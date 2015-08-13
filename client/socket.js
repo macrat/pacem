@@ -61,6 +61,7 @@ function getNearBeacons(callback){
 	//   place -- [latitude, longitude, altitude]
 	//   owner -- beacon owner name.
 	//   date -- beacon established date time.
+	//   type -- beacon type number.
 	//  err -- error message string. if success, this is null.
 
 	// debug: do something here
@@ -72,7 +73,8 @@ function getNearBeacons(callback){
 				id: i,
 				place: [e.coords.latitude+(Math.random()*0.04-0.02), e.coords.longitude+(Math.random()*0.04-0.02), 0],
 				owner: ["this", "is", "test"][i%3],
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*7)
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*7),
+				type: Math.floor(Math.random()*3)
 			});
 		}
 		callback(near, null);
@@ -96,7 +98,8 @@ function getMyBeacons(callback){
 				id: i+100,
 				place: [e.coords.latitude+(Math.random()*0.1-0.05), e.coords.longitude+(Math.random()*0.1-0.05), 0],
 				owner: "your name",
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*30)
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*30),
+				type: Math.floor(Math.random()*3)
 			});
 		}
 		callback(my, null);
