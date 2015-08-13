@@ -69,22 +69,17 @@ module.exports = function(server){
 			db.serialize(function() {
 				// ビーコン追加サンプル
 				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?)");
-				stmt.run(g_userInfo.id, req.lat, req.lng, req.alt, req.type);
+				stmt.run(g_userInfo.id, req.lat, req.lng, req.alt, req.type, function(err){
+					if(err){
+						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
+					}else{
+						io.sockets.emit("set-ret", { status:1, msg: null });
+					}
+				});
 				stmt.finalize();
 			});
 			db.close();
 
-			var t_timestamp = Math.floor( new Date().getTime() / 1000 );
-			var tmp = new Beacon({
-				userId : g_userInfo.id,
-				beaconId : req.beaconId,
-				lat : req.lat,
-				lng : req.lng,
-				alt : req.alt,
-				type : req.type,
-				timestamp : t_timestamp,
-				username:g_userInfo.name});
-			io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 		});
 		socket.on("get-my-beacons", function(req) {
 			// ビーコン取得サンプル
