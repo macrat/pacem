@@ -1,0 +1,81 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<script type="text/javascript" src="jquery.js"></script>
+	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+	<script src="lib-api.js"></script>
+
+
+	<script type="text/javascript">
+	var s = io.connect('http://localhost:3000');
+	InitSocket(s, function(){}, function(){});
+
+
+	$(document).ready(function() {
+		$("#add-user").click(function() {
+			UserAdd($("#input-user-add-pass").val(), $("#input-user-add-name").val(), function(data) {
+				if (data.status == 0) {
+					// err
+					$("#user-add-logs").text("ERROR:Can't add user.[" + data.msg + "]");
+					return;
+				}
+
+				$("#user-add-logs").text("success.");
+				$("#input-user-add-pass").val("");
+				$("#input-user-add-name").val("");
+			});
+		});
+
+		$("#verify-user").click(function() {
+			login($("#input-user-verify-name").val(), $("#input-user-verify-pass").val(), function(data) {
+				$("#verify-ret-logs").text("");
+				$("#verify-ret-logs").append((data.status ? "TRUE" : "FALSE") + ":" + data.userinfo.name + "@" + data.userinfo.id);
+
+				$("#input-user-verify-name").val("");
+				$("#input-user-verify-pass").val("");
+			});
+		});
+
+		$("#delete-user").click(function() {
+			UserDelete($("#input-user-delete-pass").val(), $("#input-user-delete-name").val(), function(data) {
+				if (data.status == 0) {
+					// err
+					$("#user-delete-logs").text("ERROR:Can't delete user.[" + data.msg + "]");
+					return;
+				}
+
+				$("#user-delete-logs").text("success.");
+				$("#input-user-delete-pass").val("");
+				$("#input-user-delete-name").val("");
+			});
+		});
+	});
+	</script>
+
+
+	<title>Server Client Sample</title>
+</head>
+
+<body>
+	<h1>Client</h1>
+	<h2>Add User</h2>
+	NAME:<input type="text" id="input-user-add-name"><br>
+	PASS:<input type="text" id="input-user-add-pass"><br>
+	<button id="add-user">UserAdd</button>
+	<div id="user-add-logs"></div>
+	<hr>
+	<h2>verify</h2>
+	NAME:<input type="text" id="input-user-verify-name"><br>
+	PASS:<input type="text" id="input-user-verify-pass"><br>
+	<button id="verify-user">verify</button>
+	<div id="verify-ret-logs"></div>
+	<hr>
+	<h2>Delete User</h2>
+	NAME:<input type="text" id="input-user-delete-name"><br>
+	PASS:<input type="text" id="input-user-delete-pass"><br>
+	<button id="delete-user">Delete</button>
+	<div id="user-delete-logs"></div>
+</body>
+</html>
