@@ -386,29 +386,35 @@ module.exports = function(server){
 	// console.log(tmp);
 						g_userInfo = tmp;
 						g_userInfo.pass = row.pass;
-						return;
+
+						if (req.pass.length > 0 && __pass == req.pass) {
+							io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
+
+							// ログイン成功。
+							// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
+							if (!socket.flagLogin) {
+								RegistSocketAPI(socket);
+								socket.flagLogin = 1;
+							}
+						}
+						else {
+							io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });
+						}
+					}
+				}, function (err, rownum) {
+					if (err) {
+						io.sockets.emit("user-verify-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
+					}
+					else if (rownum == 0) {
+						io.sockets.emit("user-verify-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
 					}
 				});
 			});
 			db.close(function(err) {
 				if (err) {
 					console.error(err.message);
+					io.sockets.emit("user-verify-ret", { status:0, msg:err.message });
 					return;
-				}
-
-
-				if (req.pass.length > 0 && __pass == req.pass) {
-					io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
-
-					// ログイン成功。
-					// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
-					if (!socket.flagLogin) {
-						RegistSocketAPI(socket);
-						socket.flagLogin = 1;
-					}
-				}
-				else {
-					io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });
 				}
 			});
 		});
