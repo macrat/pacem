@@ -36,15 +36,17 @@ io.sockets.on("connection", doRequestSocketIo);
 
 
 // ビーコン情報構造体
-function Beacon(userId, beaconId, lat, lng, alt, type, timestamp)
+function Beacon(data)
 {
-	this.userId = userId;
-	this.beaconId = beaconId;
-	this.lat = lat;
-	this.lng = lng;
-	this.alt = alt;
-	this.type = type;
-	this.timestamp = timestamp;
+	this.userId = data.userId;
+	this.beaconId = data.beaconId;
+	this.lat = data.lat;
+	this.lng = data.lng;
+	this.alt = data.alt;
+	this.type = data.type;
+	this.timestamp = data.timestamp;
+	this.username = data.username;
+	this.data = data;
 }
 
 
@@ -71,14 +73,22 @@ function RegistSocketAPI(socket)
 		var db = new sqlite3.Database(fileDb);
 		db.serialize(function() {
 			// ビーコン追加サンプル
-			var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt) VALUES (?,?,?,?)");
-			stmt.run(g_userInfo.id, req.lat, req.lng, req.alt);
+			var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?)");
+			stmt.run(g_userInfo.id, req.lat, req.lng, req.alt, req.type);
 			stmt.finalize();
 		});
 		db.close();
 
-		var timestamp = Math.floor( new Date().getTime() / 1000 );
-		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, req.type, timestamp);
+		var t_timestamp = Math.floor( new Date().getTime() / 1000 );
+		var tmp = new Beacon({
+			userId : g_userInfo.id,
+			beaconId : req.beaconId,
+			lat : req.lat,
+			lng : req.lng,
+			alt : req.alt,
+			type : req.type,
+			timestamp : t_timestamp,
+			username:g_userInfo.name});
 		io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 	});
 	socket.on("get-my-beacons", function(req) {
@@ -87,7 +97,17 @@ function RegistSocketAPI(socket)
 		var tmp = new Array();
 		db.serialize(function() {
 			db.each("SELECT * FROM Beacons WHERE userId=?", g_userInfo.id, function(err, row) {
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
+//				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
+				tmp.push(new Beacon({
+					userId : row.userId,
+					beaconId : row.id,
+					id : row.id,
+					lat : row.lat,
+					lng : row.lng,
+					alt : row.alt,
+					type : row.type,
+					timestamp : row.update_date,
+					username:g_userInfo.name}));
 			});
 		});
 		db.close(function(err) {
@@ -276,7 +296,7 @@ DEBUG("[update-user-info]\tparameter is unjust.");
 					}else{
 						io.sockets.emit("user-delete-ret", { status:1 });
 					}
-				})
+				});
 			}, function(err, rownum){
 				if(err){
 					io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
@@ -393,9 +413,22 @@ DEBUG("[user-add]\tparameter is unjust.");
 		var db = new sqlite3.Database(fileDb);
 		var tmp = new Array();
 		db.serialize(function() {
-			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
+			db.each("SELECT Beacons.id, Users.name, lat, lng, Beacons.update_date FROM Beacons, Users WHERE Beacons.userId==Users.id", function(err, row) {
 //				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
+//				tmp.push(new Beacon(row.name, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
+				tmp.push(new Beacon({
+					userId : row.userId,
+					beaconId : row.id,
+					lat : row.lat,
+					lng : row.lng,
+					alt : row.alt,
+					type : row.type,
+					timestamp : row.update_date,
+					username:row.name}));
+			}, function(err){
+				if (err) {
+					console.log(err);
+				}
 			});
 		});
 		db.close(function(err) {
