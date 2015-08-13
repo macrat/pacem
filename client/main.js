@@ -4,6 +4,10 @@ var beacon_models = [];
 var mybeacon_list = {};
 var current_beacon = null;
 
+function location2meter(x){
+	return x * 1519.85;
+}
+
 function changeMessage(message){
 	var dest = $("#message");
 	if(message == ""){
@@ -165,8 +169,8 @@ function updateIndicator(position, orient){
 }
 
 function updatePosition(position){
-	camera.position.x = position.coords.latitude * 1519.85;
-	camera.position.z = position.coords.longitude * 1519.85;
+	camera.position.x = location2meter(position.coords.latitude);
+	camera.position.z = location2meter(position.coords.longitude);
 	camera.position.y = 1;
 
 	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
@@ -175,7 +179,7 @@ function updatePosition(position){
 		}else{
 			var pos = beacon_list[x.dataset.id].place;
 		}
-		var distance = Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)) * 1519.85;
+		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
 
 		$(".distance", x).text(Math.round(distance) + "m");
 		$(x).data("distance", distance)
@@ -245,15 +249,15 @@ function rewriteBeacons(){
 		var place = beacon.place;
 
 		var mesh = new THREE.Mesh(geo, frame);
-		mesh.position.x = place[0] * 1519.85;
-		mesh.position.z = place[1] * 1519.85;
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
 
 		var mesh = new THREE.Mesh(geo, fills[beacon.type]);
-		mesh.position.x = place[0] * 1519.85;
-		mesh.position.z = place[1] * 1519.85;
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
