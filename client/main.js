@@ -82,6 +82,7 @@ function cameraInit(){
 					changeMessage("");
 				}
 			}else{
+				$("#account").animate({ opacity: 0 });
 				changeMessage(message + (detail?"<br>" + detail:""));
 			}
 		});
@@ -350,7 +351,14 @@ function threeInit(){
 		renderer.render(scene, camera);
 	})();
 
-	navigator.geolocation.watchPosition(updatePosition);
+	navigator.geolocation.watchPosition(updatePosition, function(err){
+		$("#account").animate({ opacity: 0 });
+		if(err.code == 1){
+			changeMessage("couldn't get location data<br>please check settings");
+		}else{
+			changeMessage("couldn't get location data");
+		}
+	});
 
 	window.addEventListener('resize', function(){
 			camera.aspect = window.innerWidth / window.innerHeight;
@@ -591,6 +599,11 @@ function guiInit(){
 }
 
 $(function(){
+	if(!navigator.geolocation){
+		$("#account").animate({ opacity: 0 });
+		changeMessage("this browser doesn't supported geolocation");
+	}
+
 	(function loadingAnimation(){
 		var target_opacity = 1.0;
 		if($("#loading").css("opacity") == 1.0){
