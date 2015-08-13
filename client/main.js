@@ -437,6 +437,8 @@ function guiInit(){
 	$("#beaconmenu div").click(function(){
 		if($("#mybeacons li:first").data("distance") < 3){
 			showNotify("too near your beacon");
+		}else if($("#nearbeacons li:first").data("distance") < 1){
+			showNotify("too near other beacon");
 		}else{
 			putBeacon($(this).data("type"), function(){
 				showNotify("put beacon here");
