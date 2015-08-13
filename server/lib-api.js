@@ -24,7 +24,7 @@ function UserAdd(pPass, pName, callback)
 	// callback -- callback function.
 	g_socket.emit("user-add", { pass:pPass, name:pName });
 	g_socket.on("user-add-ret", function (data) {
-		callback(data.msg, null);
+		callback(data, null);
 	});
 }
 
