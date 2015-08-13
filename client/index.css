@@ -88,7 +88,7 @@ canvas {
 	margin: 1.05em .725em .05em;
 }
 
-#login_button, #create_button, #changeid_btton {
+#login_button, #create_button, #changeid_button {
 	display: inline-block;
 	padding: .1em .5em;
 	margin: 0 .5em;
@@ -113,7 +113,7 @@ canvas {
 }
 #changeid_button:active {
 	font-size: 90%;
-	margin: .05em .25em;
+	margin: .08em .75em;
 }
 
 #openmenu {
