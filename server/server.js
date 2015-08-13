@@ -492,7 +492,6 @@ function DEBUG(msg)
 function PRINT_DB()
 {
 	var db = new sqlite3.Database(fileDb);
-	var 
 	db.serialize(function() {
 		db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
 console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
