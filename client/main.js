@@ -652,4 +652,13 @@ $(function(){
 
 	setInterval(updateBeacons, 10000);
 	updateBeacons();
+	addConnectListener(function(){
+		if(currentMessage() == "disconnect"){
+			changeMessage("");
+		}
+	});
+
+	addDisconnectListener(function(){
+		changeMessage("disconnect");
+	});
 });

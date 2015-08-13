@@ -6,6 +6,23 @@ var g_userId = 0;
 var g_userName = "";
 
 
+function addConnectListener(callback){
+	// add callback when connect.
+	//
+	// callback -- callback function.
+
+	g_socket.on("connect", callback);
+}
+
+function addDisconnectListener(callback){
+	// add callback when disconnect.
+	//
+	// callback -- callback function.
+
+	g_socket.on("disconnect", callback);
+}
+
+
 function createAccount(data, callback)
 {
 	// create user account.
