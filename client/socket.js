@@ -47,20 +47,21 @@ function getNearBeacons(callback){
 	//  err -- error message string. if success, this is null.
 
 	// debug: do something here
-	callback([
-		{
-			id: 0,
-			place: [100, 200, 300],
-			owner: "owner",
-			date: (new Date())
-		},
-		{
-			id: 1,
-			place: [300, 200, 100],
-			owner: "name",
-			date: (new Date())
+	//  this is for debug
+	navigator.geolocation.getCurrentPosition(function(e){
+		var near = [];
+		for(var i=0; i<50; i++){
+			near.push({
+				id: i,
+				place: [e.coords.latitude+(Math.random()*0.04-0.02), e.coords.longitude+(Math.random()*0.04-0.02), 0],
+				owner: ["this", "is", "test"][i%3],
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*7)
+			});
 		}
-	], null);
+		callback(near, null);
+	}, function(){
+		callback(null, "failed get location");
+	});
 }
 
 
@@ -70,20 +71,21 @@ function getMyBeacons(callback){
 	// callback -- callback function. parameters is same as getNearBeacons.
 
 	// debug: do something here
-	callback([
-		{
-			id: 0,
-			place: [100, 200, 300],
-			owner: "owner",
-			date: (new Date())
-		},
-		{
-			id: 1,
-			place: [300, 200, 100],
-			owner: "name",
-			date: (new Date())
+	//  this is for debug
+	navigator.geolocation.getCurrentPosition(function(e){
+		var my = [];
+		for(var i=0; i<3; i++){
+			my.push({
+				id: i+100,
+				place: [e.coords.latitude+(Math.random()*0.1-0.05), e.coords.longitude+(Math.random()*0.1-0.05), 0],
+				owner: "your name",
+				date: new Date((new Date()) - Math.random()*1000*60*60*24*30)
+			});
 		}
-	], null);
+		callback(my, null);
+	}, function(){
+		callback(null, "failed get location");
+	});
 }
 
 

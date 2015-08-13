@@ -225,11 +225,7 @@ function rewriteBeacons(){
 	renderer.render(scene, camera);
 }
 
-function updateBeacons(nearbeacons, mybeacons){
-	beacon_models.forEach(function(model){
-		scene.remove(model);
-	});
-
+function updateBeacons(){
 	function zfill(x){
 		return ("0" + x).slice(-2);
 	}
@@ -237,23 +233,49 @@ function updateBeacons(nearbeacons, mybeacons){
 		return "<li data-id='" + beacon.id + "'><div><div class='owner'>" + beacon.owner + "</div><div class='created'>" + zfill(beacon.date.getMonth()) + "/" + zfill(beacon.date.getDate()) + " " + zfill(beacon.date.getHours()) + ":" + zfill(beacon.date.getMinutes()) + "</div></div><div class='distance'></div></li>";
 	}
 
-	beacon_list = {};
-	mybeacon_list = {};
+	getNearBeacons(function(beacons, err){
+		if(err){
+			showNotify("failed get near beacon list<br>" + err);
+		}else{
+			beacon_list = {};
 
-	$("#nearbeacons ul, #mybeacons ul").html("");
+			$("#nearbeacons ul").html("");
 
-	nearbeacons.forEach(function(beacon){
-		beacon_list[beacon.id] = beacon;
-		$("#nearbeacons ul").append(makeBeaconListItem(beacon));
+			beacon_models.forEach(function(model){
+				scene.remove(model);
+			});
+
+			beacons.forEach(function(beacon){
+				beacon_list[beacon.id] = beacon;
+				$("#nearbeacons ul").append(makeBeaconListItem(beacon));
+			});
+
+			rewriteBeacons();
+			updatePosition();
+
+			if($("#loading").length > 0){
+				changeMessage("");
+			}
+		}
 	});
 
-	mybeacons.forEach(function(beacon){
-		mybeacon_list[beacon.id] = beacon;
-		$("#mybeacons ul").append(makeBeaconListItem(beacon));
-	});
+	getMyBeacons(function(beacons, err){
+		if(err){
+			showNotify("failed get my beacon list<br>" + err);
+		}else{
+			mybeacon_list = {};
 
-	rewriteBeacons();
-	updatePosition();
+			$("#mybeacons ul").html("");
+
+			beacons.forEach(function(beacon){
+				mybeacon_list[beacon.id] = beacon;
+				$("#mybeacons ul").append(makeBeaconListItem(beacon));
+			});
+		}
+
+		rewriteBeacons();
+		updatePosition();
+	});
 }
 
 function threeInit(){
@@ -429,36 +451,5 @@ $(function(){
 	threeInit();
 	guiInit();
 
-	navigator.geolocation.getCurrentPosition(function(e){
-		var lat = e.coords.latitude;
-		var lng = e.coords.longitude;
-		var alt = e.coords.altitude;
-		console.log(lat, lng, alt);
-
-		var near = [];
-		for(var i=0; i<50; i++){
-			near.push({
-				id: i,
-				place: [lat+(Math.random()*0.04-0.02), lng+(Math.random()*0.04-0.02), 0],
-				owner: ["this", "is", "test"][i%3],
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*7)
-			});
-		}
-		var my = [];
-		for(var i=0; i<3; i++){
-			my.push({
-				id: i+100,
-				place: [lat+(Math.random()*0.1-0.05), lng+(Math.random()*0.1-0.05), 0],
-				owner: "your name",
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*30)
-			});
-		}
-		updateBeacons(near, my);
-
-		if($("#loading").length > 0){
-			changeMessage("");
-		}
-	}, function(){
-		changeMessage("get location failed<br>please check device settings");
-	});
+	updateBeacons();
 });
