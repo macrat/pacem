@@ -337,6 +337,8 @@ module.exports = function(server){
 
 					db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
 						var u = new UserInfo(row.id, 0, row.name, row.update_date);
+						socket.user = u;
+						socket.user.pass = row.pass;
 						io.sockets.emit("user-add-ret", { status:1, userinfo : u });
 					}, function (err, rownum) {
 						if (err) {
