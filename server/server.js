@@ -181,6 +181,86 @@ DEBUG("[user-change-name]\tparameter is unjust.");
 			io.sockets.emit("user-change-name-ret", { status:1 });
 		});
 	});
+
+
+	// ユーザー情報の変更
+	socket.on("update-user-info", function(req) {
+		if (!req.data) {
+DEBUG("[update-user-info]\tparameter is unjust.");
+			io.sockets.emit("update-user-info-ret", "parameter is unjust.");
+			return;
+		}
+
+
+		// 0 何も変更なし
+		// 1 名前のみ変更
+		// 2 パスワードのみ変更
+		// 3 名前とパスワードを変更
+		var cState = 0;
+		if (data.name) {
+			// 名前の変更あり
+			cState = 1;
+		}
+		if (data.pass) {
+			// パスワードの変更あり
+			if (cState == 1) {
+				// 名前とパスワードの変更
+				cState = 3;
+			}
+			else {
+				cState = 2;
+			}
+		}
+
+		if (cState == 0) {
+			//　変更なし。
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			var stmt;
+			if (cState == 3) {
+				stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
+				stmt.run(req.data.name, req.data.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					if (err) {
+						emsg = "Can't change user name or password.";
+					}
+				});
+			}
+			else if (cState == 2) {
+				stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
+				stmt.run(req.data.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					if (err) {
+						emsg = "Can't change user password.";
+					}
+				});
+			}
+			else if (cState == 1) {
+				stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
+				stmt.run(req.data.name, g_userInfo.name, g_userInfo.pass, function(err) {
+					if (err) {
+						emsg = "Can't change user name.";
+					}
+				});
+			}
+			stmt.finalize();
+		});
+
+
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				io.sockets.emit("update-user-info-ret", emsg);
+				return;
+			}
+
+			io.sockets.emit("update-user-info-ret", null);
+		});
+	});
+
+
 	// ユーザー削除
 	socket.on("user-delete", function(req) {
 		var db = new sqlite3.Database(fileDb);
