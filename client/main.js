@@ -434,6 +434,7 @@ function guiInit(){
 		}else{
 			putBeacon($(this).data("type"), function(){
 				showNotify("put beacon here");
+				updateBeacons();
 			});
 		}
 		$("#beaconmenu").animate({
@@ -656,6 +657,7 @@ $(function(){
 		if(currentMessage() == "disconnect"){
 			changeMessage("");
 		}
+		updateBeacons();
 	});
 
 	addDisconnectListener(function(){
