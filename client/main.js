@@ -117,6 +117,45 @@ function cameraInit(){
 	});
 }
 
+function updateIndicator(position, orient){
+	if(!position){
+		position = this.oldPos;
+	}
+	if(!orient){
+		orient = this.oldOrient;
+	}
+
+	var canv = $("#direction_indicator")[0];
+	var ctx = canv.getContext("2d");
+	var indicator_size = Math.min(canv.width, canv.height)*0.45;
+
+	var baseAngle = orient ? orient.alpha/180*Math.PI : 0;
+	var fov = camera.fov/180*Math.PI;
+
+	ctx.clearRect(0, 0, canv.width, canv.height);
+
+	for(var x in beacon_list){
+		var pos = beacon_list[x].place;
+		var angle = (Math.atan2(pos[0] - position.coords.latitude, pos[1] - position.coords.longitude) - baseAngle + Math.PI*2)%(Math.PI*2);
+
+		ctx.globalAlpha = Math.min(0.9, Math.max(0, Math.abs(angle-Math.PI)/(Math.PI-fov)));
+
+		ctx.fillStyle = "white";
+		ctx.beginPath();
+		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 4, 0, Math.PI*2, true);
+		ctx.fill();
+
+		ctx.fillStyle = "black";
+		ctx.beginPath();
+		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 3, 0, Math.PI*2, true);
+		ctx.fill();
+	}
+	ctx.fill();
+
+	this.oldPos = position;
+	this.oldOrient = orient;
+}
+
 function updatePosition(position){
 	camera.position.x = position.coords.latitude * 1519.85;
 	camera.position.z = position.coords.longitude * 1519.85;
@@ -137,6 +176,7 @@ function updatePosition(position){
 	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
 
 	$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
 
 	$("#nearbeacons li, #mybeacons li").click(function(){
 		var oldid = $(".selected_beacon").data("id");
@@ -178,6 +218,9 @@ function updatePosition(position){
 		.mousedown(down)
 		.bind("touchend", up)
 		.mouseup(up)
+
+
+	updateIndicator(position, null);
 }
 
 function rewriteBeacons(){
@@ -284,6 +327,10 @@ function threeInit(){
 
 	$("main").append(renderer.domElement);
 
+	var indicator = $("#direction_indicator")[0];
+	indicator.width = window.innerWidth;
+	indicator.height = window.innerHeight;
+
 	(function animation(){
 		window.requestAnimationFrame(animation);
 
@@ -302,6 +349,11 @@ function threeInit(){
 			camera.updateProjectionMatrix();
 
 			renderer.setSize(window.innerWidth, window.innerHeight);
+
+			var indicator = $("#direction_indicator")[0];
+			indicator.width = window.innerWidth;
+			indicator.height = window.innerHeight;
+			updateIndicator(null, null);
 
 			$("#menucontent").css("height", $("#sidemenu").innerHeight() - Number($("#sidemenu").css("padding").slice(0, -2))*2 - $("#menuheader").outerHeight());
 		});
@@ -397,7 +449,12 @@ function guiInit(){
 	});
 
 
-	$("#username span").text(getUserInfo().name)
+	$("#username span").text(getUserInfo().name);
+
+
+	window.addEventListener('deviceorientation', function(event) {
+		  updateIndicator(null, event);
+	});
 
 
 	function rmBeacon(beaconid){

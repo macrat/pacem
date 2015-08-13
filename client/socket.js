@@ -50,7 +50,7 @@ function getNearBeacons(callback){
 	//  this is for debug
 	navigator.geolocation.getCurrentPosition(function(e){
 		var near = [];
-		for(var i=0; i<50; i++){
+		for(var i=0; i<10; i++){
 			near.push({
 				id: i,
 				place: [e.coords.latitude+(Math.random()*0.04-0.02), e.coords.longitude+(Math.random()*0.04-0.02), 0],
