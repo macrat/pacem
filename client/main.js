@@ -321,7 +321,7 @@ function guiInit(){
 		$("#putcancel").fadeOut("slow");
 	});
 	$("#beaconmenu div").click(function(){
-		putBeacon($(this).data("id"), function(){
+		putBeacon($(this).data("type"), function(){
 			showNotify("put beacon here");
 		});
 		$("#beaconmenu").animate({
