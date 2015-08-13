@@ -93,7 +93,7 @@ module.exports = function(server){
 						alt : row.alt,
 						type : row.type,
 						timestamp : row.update_date,
-						username:g_userInfo.name}));
+						username:socket.user.name}));
 				});
 			});
 			db.close(function(err) {
