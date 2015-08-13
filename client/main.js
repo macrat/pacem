@@ -125,6 +125,9 @@ function cameraInit(){
 function updateIndicator(position, orient){
 	if(!position){
 		position = this.oldPos;
+		if(!position){
+			navigator.geolocation.getCurrentPosition(updateIndicator);
+		}
 	}
 	if(!orient){
 		orient = this.oldOrient;
@@ -214,6 +217,9 @@ function setBeaconsListEventListener(){
 function calcDistances(position){
 	if(!position){
 		position = this.oldPos;
+		if(!position){
+			navigator.geolocation.getCurrentPosition(calcDistances);
+		}
 	}
 
 	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
