@@ -5,13 +5,6 @@
 
 "use strict";
 
-/*
- *	GPS 情報関連
- *	Set
- *	Get
- *	Search
-*/
-
 
 var http = require("http");
 var socketio = require("socket.io");
@@ -50,6 +43,7 @@ function Beacon(userId, beaconId, lat, lng, alt, timestamp)
 	this.lat = lat;
 	this.lng = lng;
 	this.alt = alt;
+	this.type = 0;
 	this.timestamp = timestamp;
 }
 
@@ -65,56 +59,33 @@ function UserInfo(id, pass, name, timestamp)
 
 
 var g_beaconDB = new Array();
+var g_userInfo = new UserInfo();
 
 
-// Socket.IO のリクエスト処理
-function doRequestSocketIo(socket)
+// ソケットに各種 API を関連付ける。
+function RegistSocketAPI(socket)
 {
-	// 接続成功を送信
-	socket.emit("connected");
-
-
-	// 初期化メッセージを受信した時
-	socket.on("init", function(req) {
-		DEBUG("New user connected server.");
-	});
-	// 切断したとき
-	socket.on("disconnect", function () {
-		DEBUG("User disconnected.");
-	});
-
-
 	// 各種 API
 	// 位置情報のセット
 	socket.on("set", function(req) {
-		DEBUG("Set Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
-
-
+// DEBUG("Set Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
 		var db = new sqlite3.Database(fileDb);
 		db.serialize(function() {
 			// ビーコン追加サンプル
-			// http://stackoverflow.com/questions/22022633/inserting-id-field-autoincrement-with-sqlite3-and-node-js
 			var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt) VALUES (?,?,?,?)");
-			// userid, lat, lng, timestamp
-			stmt.run(req.userId, req.lat, req.lng, req.alt);
+			stmt.run(g_userInfo.id, req.lat, req.lng, req.alt);
 			stmt.finalize();
 		});
 		db.close();
 
-
-		// 既存のビーコンが移動しただけか？
-		// macrat : チェックする機能は追加機能でいいかも。
-
 		var timestamp = Math.floor( new Date().getTime() / 1000 );
-		var tmp = new Beacon(req.userId, req.beaconId, req.lat, req.lng, req.alt, timestamp);
+		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, timestamp);
 		g_beaconDB.push(tmp);
 		io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 	});
 	// 周辺のビーコンを取得
 	socket.on("get", function(req) {
-		DEBUG("Get Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
-
-
+// DEBUG("Get Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
 		// ビーコン取得サンプル
 		var db = new sqlite3.Database(fileDb);
 		var tmp = new Array();
@@ -147,10 +118,27 @@ function doRequestSocketIo(socket)
 			io.sockets.emit("get-ret", { beacons:tmp2 });
 		});
 	});
+	socket.on("get-my-beacons", function(req) {
+		// ビーコン取得サンプル
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new Array();
+		db.serialize(function() {
+			db.each("SELECT * FROM Beacons WHERE userId=?", g_userInfo.id, function(err, row) {
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+			});
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+			io.sockets.emit("get-my-beacons-ret", { beacons:tmp });
+		});
+	});
 	// あるビーコンを検索する処理
 	socket.on("search", function(req) {
-		DEBUG("Search. " + req.beaconId);
-
+// DEBUG("Search. " + req.beaconId);
 		var db = new sqlite3.Database(fileDb);
 		var tmp = new Beacon();
 		db.serialize(function() {
@@ -177,23 +165,128 @@ function doRequestSocketIo(socket)
 DEBUG("Beacon Searched.");
 		});
 	});
-
-	// あるユーザーの作成した特定のビーコンを削除する処理
+	// ユーザーの作成した特定のビーコンを削除する処理
 	socket.on("remove", function(req) {
 		var db = new sqlite3.Database(fileDb);
 		db.serialize(function() {
-			var stmt = db.prepare("DELETE FROM Beacons WHERE userId = ? AND id = ?");
-			stmt.run(req.userId, req.beaconId);
+			db.each("SELECT * FROM Beacons WHERE userId == ? AND id == ?", g_userInfo.id, req.beaconId, function(err, row){
+				db.run("DELETE FROM Beacons WHERE userId = ? AND id = ?", g_userInfo.id, req.beaconId, function(err){
+					if(err){
+						io.sockets.emit("remove-ret", { status:0, msg:"unknown error" });
+					}else{
+						io.sockets.emit("remove-ret", { status:1 });
+					}
+				})
+			}, function(err, rownum){
+				if(err){
+					io.sockets.emit("remove-ret", { status:0, msg:"unknown error" });
+				}else if(rownum == 0){
+					io.sockets.emit("remove-ret", { status:0, msg:"incorrect user name or password" });
+DEBUG("Beacon removed.");
+				}
+			});
+		});
+	});
+
+	// ユーザー関連処理
+	// パスワード変更
+	socket.on("user-change-pass", function(req) {
+		if (req.npass.length == 0) {
+DEBUG("[user-change-pass]\tparameter is unjust.");
+			io.sockets.emit("user-change-pass-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
+			stmt.run(req.npass, g_userInfo.name, g_userInfo.pass, function(err) {
+				if (err) {
+					emsg = "Can't change user password.";
+				}
+			});
 			stmt.finalize();
 		});
 		db.close(function(err) {
-			if (err) {
-				console.error(err.message);
+			if (emsg.length > 0) {
+				io.sockets.emit("user-change-pass-ret", { status:0, msg:emsg });
 				return;
 			}
 
-DEBUG("Beacon removed.");
+			io.sockets.emit("user-change-pass-ret", { status:1 });
 		});
+	});
+	// ユーザー名変更
+	socket.on("user-change-name", function(req) {
+		if (req.nname.length == 0) {
+DEBUG("[user-change-name]\tparameter is unjust.");
+			io.sockets.emit("user-change-name-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
+			stmt.run(req.nname, g_userInfo.name, g_userInfo.pass, function(err) {
+				if (err) {
+					emsg = "Can't change user name.";
+				}
+			});
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				io.sockets.emit("user-change-name-ret", { status:0, msg:emsg });
+				return;
+			}
+
+			io.sockets.emit("user-change-name-ret", { status:1 });
+		});
+	});
+	// ユーザー削除
+	socket.on("user-delete", function(req) {
+		var db = new sqlite3.Database(fileDb);
+		db.serialize(function() {
+			db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", g_userInfo.name, g_userInfo.pass, function(err, row){
+				db.run("DELETE FROM Users WHERE name == ?", g_userInfo.name, function(err){
+					if(err){
+						io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
+					}else{
+						io.sockets.emit("user-delete-ret", { status:1 });
+					}
+				})
+			}, function(err, rownum){
+				if(err){
+					io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
+				}else if(rownum == 0){
+					io.sockets.emit("user-delete-ret", { status:0, msg:"incorrect user name or password" });
+				}
+			});
+		});
+	});
+
+	return;
+}
+
+
+// Socket.IO のリクエスト処理
+function doRequestSocketIo(socket)
+{
+	// 接続成功を送信
+	socket.emit("connected");
+
+
+	// 初期化メッセージを受信した時
+	socket.on("init", function(req) {
+		DEBUG("New user connected server.");
+	});
+	// 切断したとき
+	socket.on("disconnect", function () {
+		DEBUG("User disconnected.");
 	});
 
 
@@ -228,34 +321,6 @@ DEBUG("[user-add]\tparameter is unjust.");
 			io.sockets.emit("user-add-ret", { status:1 });
 		});
 	});
-	// ユーザー削除
-	socket.on("user-delete", function(req) {
-		if (req.pass.length == 0 || req.name.length == 0) {
-DEBUG("[user-delete]\tparameter is unjust.");
-			io.sockets.emit("user-delete-ret", { status:0, msg:"parameter is unjust." });
-			return;
-		}
-
-
-		var db = new sqlite3.Database(fileDb);
-		db.serialize(function() {
-			db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", req.name, req.pass, function(err, row){
-				db.run("DELETE FROM Users WHERE name == ?", req.name, function(err){
-					if(err){
-						io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
-					}else{
-						io.sockets.emit("user-delete-ret", { status:1 });
-					}
-				})
-			}, function(err, rownum){
-				if(err){
-					io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
-				}else if(rownum == 0){
-					io.sockets.emit("user-delete-ret", { status:0, msg:"incorrect user name or password" });
-				}
-			});
-		});
-	});
 	// NAME と PASS が正しいか否かを判定
 	socket.on("user-verify", function(req) {
 		// req.id, req.pass
@@ -274,6 +339,8 @@ DEBUG("[user-delete]\tparameter is unjust.");
 					tmp.name = row.name;
 					tmp.timestamp = row.update_date;
 // console.log(tmp);
+					g_userInfo = tmp;
+					g_userInfo.pass = row.pass;
 					return;
 				}
 			});
@@ -287,70 +354,14 @@ DEBUG("[user-delete]\tparameter is unjust.");
 
 			if (req.pass.length > 0 && __pass == req.pass) {
 				io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
+
+				// ログイン成功。
+				// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
+				RegistSocketAPI(socket);
 			}
 			else {
 				io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });
 			}
-		});
-	});
-	// パスワード変更
-	socket.on("user-change-pass", function(req) {
-		if (req.pass.length == 0 || req.npass.length == 0 || req.name.length == 0) {
-DEBUG("[user-change-pass]\tparameter is unjust.");
-			io.sockets.emit("user-change-pass-ret", { status:0, msg:"parameter is unjust." });
-			return;
-		}
-
-
-		var db = new sqlite3.Database(fileDb);
-		var emsg = "";
-		db.serialize(function() {
-			var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-			// ユーザー追加
-			stmt.run(req.npass, req.name, req.pass, function(err) {
-				if (err) {
-					emsg = "Can't change user password.";
-				}
-			});
-			stmt.finalize();
-		});
-		db.close(function(err) {
-			if (emsg.length > 0) {
-				io.sockets.emit("user-change-pass-ret", { status:0, msg:emsg });
-				return;
-			}
-
-			io.sockets.emit("user-change-pass-ret", { status:1 });
-		});
-	});
-	// ユーザー名変更
-	socket.on("user-change-name", function(req) {
-		if (req.name.length == 0 || req.nname.length == 0 || req.pass.length == 0) {
-DEBUG("[user-change-name]\tparameter is unjust.");
-			io.sockets.emit("user-change-name-ret", { status:0, msg:"parameter is unjust." });
-			return;
-		}
-
-
-		var db = new sqlite3.Database(fileDb);
-		var emsg = "";
-		db.serialize(function() {
-			var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-			// ユーザー追加
-			stmt.run(req.nname, req.name, req.pass, function(err) {
-				if (err) {
-					emsg = "Can't change user name.";
-				}
-			});
-			stmt.finalize();
-		});
-		db.close(function(err) {
-			if (emsg.length > 0) {
-				io.sockets.emit("user-change-name-ret", { status:0, msg:emsg });
-				return;
-			}
-
-			io.sockets.emit("user-change-name-ret", { status:1 });
 		});
 	});
 

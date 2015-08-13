@@ -41,10 +41,9 @@ function UserDelete(pPass, pName, callback)
 }
 
 
-// 仕様変更がリリース版ではあるため使うな。
-function __UserChangeName(oldName, newName, pPass, callback)
+function UserChangeName(newName, callback)
 {
-	g_socket.emit("user-change-name", { pass:pPass, name:oldName, nname:newName });
+	g_socket.emit("user-change-name", { nname:newName });
 	g_socket.on("user-change-name-ret", function (data) {
 		callback(data.msg, null);
 	});
@@ -80,7 +79,7 @@ function getUserInfo(){
 	// debug: do something here
 
 	// ログイン時に設定された値を返す。
-	return { ID: g_userId, name: g_userName };
+	return { ID: g_userId, name: g_userName, lat:g_lat, lng:g_lng };
 }
 
 
@@ -113,6 +112,7 @@ function getNearBeacons(callback){
 	//   lng
 	//   alt
 	//   userId -- beacon owner id.
+	//   type
 	//   timestamp -- beacon established date time.
 
 
@@ -127,22 +127,19 @@ function getMyBeacons(callback){
 	// get my beacons list.
 	//
 	// callback -- callback function. parameters is same as getNearBeacons.
+	//  beacons -- list of beacon information.
+	//   beaconId -- beacon's id
+	//   lat
+	//   lng
+	//   alt
+	//   userId -- beacon owner id.
+	//   type
+	//   timestamp -- beacon established date time.
 
-	// debug: do something here
-	callback([
-		{
-			id: 0,
-			place: [100, 200, 300],
-			owner: "owner",
-			date: (new Date())
-		},
-		{
-			id: 1,
-			place: [300, 200, 100],
-			owner: "name",
-			date: (new Date())
-		}
-	], null);
+	g_socket.emit("get-my-beacons", {});
+	g_socket.on("get-my-beacons-ret", function (data) {
+		callback(data.beacons, null);
+	});
 }
 
 
@@ -154,7 +151,7 @@ function putBeacon(pType, callback){
 	//  err -- error message string. if success, this is null.
 
 
-	g_socket.emit("set", { userId : g_userId, type : pType, lat : g_lat, lng : g_lng });
+	g_socket.emit("set", { type : pType, lat : g_lat, lng : g_lng });
 
 
 	// debug: do something here
@@ -196,7 +193,10 @@ function removeBeacon(id, callback){
 	//  err -- error message string. if success, this is null.
 
 
-	g_socket.emit("remove", { userId : g_userId, beaconId : id });
+	g_socket.emit("remove", { beaconId : id });
+	g_socket.on("remove-ret", function (err) {
+		callback(err.msg, null);
+	});
 
 
 	// debug: do something here
