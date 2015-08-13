@@ -1,85 +1,68 @@
 // connection server
 
 
-var g_socket;
+var g_socket = io.connect("http://192.168.11.4:3000/");
 var g_userId = 0;
 var g_userName = "";
-// 位置情報
-var g_lat, g_lng;
 
 
-function InitSocket(socket, connectCallback, disconnectCallback)
+function createAccount(data, callback)
 {
-	g_socket = socket;
-	//サーバから受け取るイベント
-	g_socket.on("connect", connectCallback);
-	g_socket.on("disconnect", disconnectCallback);
-}
-
-
-function UserAdd(pPass, pName, callback)
-{
-	// User add.
+	// create user account.
 	//
+	// data -- new user information.
+	//  name -- unique user name.
+	//  password -- password.
 	// callback -- callback function.
-	g_socket.emit("user-add", { pass:pPass, name:pName });
-	g_socket.on("user-add-ret", function (data) {
-		callback(data.msg, null);
-	});
+	//  err -- error message string. if success, this is null.
+
+	g_socket.emit("user-add", { pass:data.password, name:data.name });
+	function cb(data) {
+		g_socket.removeListener("user-add-ret", cb);
+
+		g_userId = data.userinfo.id;
+		g_userName = data.userinfo.name;
+
+		callback(data.msg);
+	}
+	g_socket.on("user-add-ret", cb);
 }
 
 
-function UserDelete(pPass, pName, callback)
-{
-	// User delete
-	//
-	// callback -- callback function.
-	g_socket.emit("user-delete", { pass:pPass, name:pName });
-	g_socket.on("user-delete-ret", function (data) {
-		callback(data.msg, null);
-	});
-}
-
-
-function UserChangeName(newName, callback)
-{
-	g_socket.emit("user-change-name", { nname:newName });
-	g_socket.on("user-change-name-ret", function (data) {
-		callback(data.msg, null);
-	});
-}
-
-
-function login(pName, pPass, callback){
+function login(userid, password, callback){
 	// login.
 	//
+	// userid -- user ID string.
+	// password -- password string.
 	// callback -- callback function.
-	//  data.status	-> 0 : err
-	//		-> 1 : success
+	//  err -- error message string. if success, this is null.
 
 
-	g_socket.emit("user-verify", { pass:pPass, name:pName });
-	g_socket.on("user-verify-ret", function (data) {
+	g_socket.emit("user-verify", { pass:userid, name:password });
+	function cb(data) {
+		g_socket.removeListener("user-verify-ret", cb);
+
 		if (data.status == 1) {
 			// ログイン成功
 			g_userId = data.userinfo.id;
 			g_userName = data.userinfo.name;
-		}
 
-		callback(data, null);
-	});
+			callback(null);
+		}else{
+			callback("incorrect user ID or password");
+		}
+	}
+	g_socket.on("user-verify-ret", cb);
 }
 
 
 function getUserInfo(){
 	// get user information.
 	//
-	// resunt: user information.
-
-	// debug: do something here
+	// result: user information.
 
 	// ログイン時に設定された値を返す。
-	return { ID: g_userId, name: g_userName, lat:g_lat, lng:g_lng };
+	return { ID: g_userId, name: g_userName };
 }
 
 
@@ -88,19 +71,20 @@ function updateUserInfo(data, callback){
 	//
 	// data -- new user information.
 	//  name -- new user name.
+	//  password -- new password.
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 
+	g_socket.emit("update-user-info", {
+		name: data.name,
+		pass: data.password
+	});
+	function cb(data){
+		g_socket.removeListener("update-user-info-ret", cb);
 
-	g_userId = data.userId;
-	g_lat = data.lat;
-	g_lng = data.lng;
-
-
-	// debug: do something here
-	if (callback) {
-		callback(null);
+		callback(data);
 	}
+	g_socket.on("update-user-info-ret", cb);
 }
 
 
@@ -109,21 +93,35 @@ function getNearBeacons(callback){
 	//
 	// callaback -- callback function.
 	//  beacons -- list of beacon information.
-	//   beaconId -- beacon's id
-	//   lat
-	//   lng
-	//   alt
-	//   userId -- beacon owner id.
-	//   type
-	//   timestamp -- beacon established date time.
+	//   id -- beacon's id
+	//   place -- [latitude, longitude, altitude]
+	//   owner -- beacon owner name.
+	//   date -- beacon established date time.
+	//   type -- beacon type number.
+	//  err -- error message string. if success, this is null.
 
+	navigator.geolocation.getCurrentPosition(function(position){
+		g_socket.emit("get", { lat : position.coords.latitude, lng : position.coords.longitude });
+		function cb(data) {
+			g_socket.removeListener("get-ret", cb);
 
-	g_socket.emit("get", { lat : g_lat, lng : g_lng });
-	if (callback) {
-		g_socket.on("get-ret", function (data) {
-			callback(data.beacons, null);
-		});
-	}
+			var ls = [];
+
+			for(var i in data.beacons){
+				ls.push({
+					id: data.beacons[i].beaconId,
+					place: [data.beacons[i].lat, data.beacons[i].lng, data.beacons[i].alt],
+					owner: data.beacons[i].userId,  // TODO: Change to user name (server side)
+					date: new Date(data.beacons[i].timestamp),
+					type: data.beacons[i].type
+				});
+			}
+			callback(ls, null);  // TODO: Support error handling (server side)
+		}
+		g_socket.on("get-ret", cb);
+	}, function(err){
+		callback(null, "failed get location");
+	});
 }
 
 
@@ -131,21 +129,25 @@ function getMyBeacons(callback){
 	// get my beacons list.
 	//
 	// callback -- callback function. parameters is same as getNearBeacons.
-	//  beacons -- list of beacon information.
-	//   beaconId -- beacon's id
-	//   lat
-	//   lng
-	//   alt
-	//   userId -- beacon owner id.
-	//   type
-	//   timestamp -- beacon established date time.
 
 	g_socket.emit("get-my-beacons", {});
-	if (callback) {
-		g_socket.on("get-my-beacons-ret", function (data) {
-			callback(data.beacons, null);
-		});
+	function cb(data) {
+		g_socket.removeListener("get-my-beacons-ret", cb);
+
+		var ls = [];
+
+		for(var i in data.beacons){
+			ls.push({
+				id: data.beacons[i].beaconId,
+				place: [data.beacons[i].lat, data.beacons[i].lng, data.beacons[i].alt],
+				owner: data.beacons[i].userId,  // TODO: Change to user name (server side)
+				date: new Date(data.beacons[i].timestamp),
+				type: data.beacons[i].type
+			});
+		}
+		callback(ls, null);  // TODO: Support error handling (server side)
 	}
+	g_socket.on("get-my-beacons-ret", cb);
 }
 
 
@@ -156,14 +158,14 @@ function putBeacon(pType, callback){
 	// callback -- callback function..
 	//  err -- error message string. if success, this is null.
 
+	navigator.geolocation.getCurrentPosition(function(position){
+		console.log("send");
+		g_socket.emit("set", { type : pType, lat : position.coords.latitude, lng : position.coords.longitude })
 
-	g_socket.emit("set", { type : pType, lat : g_lat, lng : g_lng });
-
-
-	// debug: do something here
-	if (callback) {
-		callback(null);
-	}
+		callback(null);  // TODO: Support error handling (server side)
+	}, function(err){
+		callback("failed get position");
+	});
 }
 
 
@@ -177,19 +179,11 @@ function getBeacon(id, callback){
 
 
 	g_socket.emit("search", { beaconId : id });
-	if (callback) {
-		g_socket.on("search-ret", function (data) {
-			callback(data.beacon, null);
-		});
+	function cb(data){
+		g_socket.removeListener("search-ret", cb);
+		callback(data.beacon, null);  // TODO: Support error handling (server side)
 	}
-
-/*	// debug: do something here
-	callback({
-		id: id,
-		place: [200, 400, 800],
-		owner: "user",
-		date: (new Date())
-	}, null);*/
+	g_socket.on("search-ret", cb);
 }
 
 
@@ -203,9 +197,9 @@ function removeBeacon(id, callback){
 
 
 	g_socket.emit("remove", { beaconId : id });
-	if (callback) {
-		g_socket.on("remove-ret", function (err) {
-			callback(err.msg, null);
-		});
+	function cb(data){
+		g_socket.removeListener("remove-ret", cb);
+		callback(data.msg);
 	}
+	g_socket.on("remove-ret", cb);
 }

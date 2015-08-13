@@ -168,28 +168,7 @@ function updateIndicator(position, orient){
 	this.oldOrient = orient;
 }
 
-function updatePosition(position){
-	camera.position.x = location2meter(position.coords.latitude);
-	camera.position.z = location2meter(position.coords.longitude);
-	camera.position.y = 1;
-
-	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
-		if($(x).parent().parent().attr("id") == "mybeacons"){
-			var pos = mybeacon_list[x.dataset.id].place;
-		}else{
-			var pos = beacon_list[x.dataset.id].place;
-		}
-		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
-
-		$(".distance", x).text(Math.round(distance) + "m");
-		$(x).attr("data-distance", distance)
-	});
-
-	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
-
-	$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
-
-
+function setBeaconsListEventListener(){
 	$("#nearbeacons li, #mybeacons li").click(function(){
 		var oldid = $(".selected_beacon").data("id");
 		$(".selected_beacon").removeClass("selected_beacon");
@@ -207,7 +186,6 @@ function updatePosition(position){
 			}
 		}
 
-		rewriteBeacons();
 		updateIndicator();
 	});
 
@@ -231,9 +209,43 @@ function updatePosition(position){
 		.mousedown(down)
 		.bind("touchend", up)
 		.mouseup(up)
+}
 
+function calcDistances(position){
+	if(!position){
+		position = this.oldPos;
+	}
 
+	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
+		if($(x).parent().parent().attr("id") == "mybeacons"){
+			var pos = mybeacon_list[x.dataset.id].place;
+		}else{
+			var pos = beacon_list[x.dataset.id].place;
+		}
+		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
+
+		$(".distance", x).text(Math.round(distance) + "m");
+		$(x).attr("data-distance", distance)
+	});
+
+	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+	$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+	setBeaconsListEventListener();
+
+	this.oldPos = position;
+}
+
+function updatePosition(position){
+	camera.position.x = location2meter(position.coords.latitude);
+	camera.position.z = location2meter(position.coords.longitude);
+	camera.position.y = 1;
+
+	calcDistances();
 	updateIndicator(position, null);
+
+	this.oldPos = position;
 }
 
 function rewriteBeacons(){
@@ -309,7 +321,7 @@ function updateBeacons(){
 			});
 
 			rewriteBeacons();
-			navigator.geolocation.getCurrentPosition(updatePosition);
+			calcDistances();
 
 			if($("#loading").length > 0){
 				changeMessage("");
@@ -329,10 +341,10 @@ function updateBeacons(){
 				mybeacon_list[beacon.id] = beacon;
 				$("#mybeacons ul").append(makeBeaconListItem(beacon));
 			});
-		}
 
-		rewriteBeacons();
-		navigator.geolocation.getCurrentPosition(updatePosition);
+			rewriteBeacons();
+			calcDistances();
+		}
 	});
 }
 
@@ -493,15 +505,14 @@ function guiInit(){
 			.animate({ opacity: 1 })
 	});
 	function changeName(){
-		$("#account").animate({ opacity: 0 }, function(){
-			$("#account").css("display", "none");
-		});
-
 		if(($("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != "") || $("#changeid_password").val() != ""){
 			updateUserInfo({
 					name: $("#changeid_username").val() || null,
 					password: $("#changeid_password").val() || null
 				}, function(err){
+					$("#account").animate({ opacity: 0 }, function(){
+						$("#account").css("display", "none");
+					});
 					if(err){
 						showNotify("failed change account info<br>" + err);
 					}else{
@@ -509,6 +520,10 @@ function guiInit(){
 						$("#username span").text(getUserInfo().name);
 					}
 				});
+		}else{
+			$("#account").animate({ opacity: 0 }, function(){
+				$("#account").css("display", "none");
+			});
 		}
 	}
 	$("#changeid_button").click(changeName);
@@ -548,6 +563,7 @@ function guiInit(){
 					$("#account").css("display", "none");
 				});
 				$("#username span").text(getUserInfo().name);
+				updateBeacons();
 			}
 		});
 	}
@@ -572,6 +588,7 @@ function guiInit(){
 				});
 				showNotify("created account<br>welcome " + getUserInfo().name);
 				$("#username span").text(getUserInfo().name);
+				updateBeacons();
 			}
 		});
 	});
@@ -632,5 +649,6 @@ $(function(){
 	threeInit();
 	guiInit();
 
+	setInterval(updateBeacons, 10000);
 	updateBeacons();
 });
