@@ -99,7 +99,7 @@ module.exports = function(server){
 			db.close(function(err) {
 				if (err) {
 					console.error(err.message);
-					io.sockets.emit("get-my-beacons-ret", { status:0, msg:err.message });
+					io.sockets.emit("get-my-beacons-ret", { status:0, msg:"internal server error" });
 					return;
 				}
 
@@ -138,7 +138,7 @@ module.exports = function(server){
 		socket.on("user-change-pass", function(req) {
 			if (req.npass.length == 0) {
 	DEBUG("[user-change-pass]\tparameter is unjust.");
-				io.sockets.emit("user-change-pass-ret", { status:0, msg:"parameter is unjust." });
+				io.sockets.emit("user-change-pass-ret", { status:0, msg:"parameter is unjust" });
 				return;
 			}
 
@@ -149,7 +149,7 @@ module.exports = function(server){
 				var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
 				stmt.run(req.npass, user_info.name, user_info.pass, function(err) {
 					if (err) {
-						emsg = "Can't change user password.";
+						emsg = "internal server error";
 					}
 				});
 				stmt.finalize();
@@ -167,7 +167,7 @@ module.exports = function(server){
 		socket.on("user-change-name", function(req) {
 			if (req.nname.length == 0) {
 	DEBUG("[user-change-name]\tparameter is unjust.");
-				io.sockets.emit("user-change-name-ret", { status:0, msg:"parameter is unjust." });
+				io.sockets.emit("user-change-name-ret", { status:0, msg:"parameter is unjust" });
 				return;
 			}
 
@@ -178,7 +178,7 @@ module.exports = function(server){
 				var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
 				stmt.run(req.nname, user_info.name, user_info.pass, function(err) {
 					if (err) {
-						emsg = "Can't change user name.";
+						emsg = "internal server error";
 					}
 				});
 				stmt.finalize();
@@ -198,76 +198,52 @@ module.exports = function(server){
 		socket.on("update-user-info", function(req) {
 			if (!req) {
 	DEBUG("[update-user-info]\tparameter is unjust.");
-				io.sockets.emit("update-user-info-ret", "parameter is unjust.");
-				return;
-			}
-
-
-			// 0 何も変更なし
-			// 1 名前のみ変更
-			// 2 パスワードのみ変更
-			// 3 名前とパスワードを変更
-			var cState = 0;
-			if (req.name) {
-				// 名前の変更あり
-				cState = 1;
-			}
-			if (req.pass) {
-				// パスワードの変更あり
-				if (cState == 1) {
-					// 名前とパスワードの変更
-					cState = 3;
-				}
-				else {
-					cState = 2;
-				}
-			}
-
-			if (cState == 0) {
-				//　変更なし。
+				io.sockets.emit("update-user-info-ret", "parameter is unjust");
 				return;
 			}
 
 
 			var db = new sqlite3.Database(fileDb);
-			var emsg = "";
+
 			db.serialize(function() {
-				var stmt;
-				if (cState == 3) {
-					stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, req.pass, user_info.name, user_info.pass, function(err) {
-						if (err) {
-							emsg = "Can't change user name or password.";
-						}
-					});
-				}
-				else if (cState == 2) {
-					stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.pass, user_info.name, user_info.pass, function(err) {
-						if (err) {
-							emsg = "Can't change user password.";
-						}
-					});
-				}
-				else if (cState == 1) {
-					stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, user_info.name, user_info.pass, function(err) {
-						if (err) {
-							emsg = "Can't change user name.";
-						}
-					});
-				}
-				stmt.finalize();
-			});
+				db.each("SELECT * from Ussers WHERE name==?", req.name, function(err, row){}, function(err, rownum){
+					if(rownum > 0){
+						io.sockets.emit("update-user-info-ret", "new name is already exists");
+						return;
+					}
 
-
-			db.close(function(err) {
-				if (emsg.length > 0) {
-					io.sockets.emit("update-user-info-ret", emsg);
-					return;
-				}
-
-				io.sockets.emit("update-user-info-ret", null);
+					if (req.name && req.pass) {
+						stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
+						stmt.run(req.name, req.pass, user_info.name, user_info.pass, function(err) {
+							if(err){
+								io.sockets.emit("update-user-info-ret", "internal server error");
+							}else{
+								io.sockets.emit("update-user-info-ret", null);
+							}
+						});
+					}
+					else if (req.name) {
+						stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
+						stmt.run(req.pass, user_info.name, user_info.pass, function(err) {
+							if (err) {
+								io.sockets.emit("update-user-info-ret", "internal server error");
+							}else{
+								io.sockets.emit("update-user-info-ret", null);
+							}
+						});
+					}
+					else if (req.pass) {
+						stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
+						stmt.run(req.name, user_info.name, user_info.pass, function(err) {
+							if (err) {
+								io.sockets.emit("update-user-info-ret", "internal server error");
+							}else{
+								io.sockets.emit("update-user-info-ret", null);
+							}
+						});
+					}
+					stmt.finalize();
+				});
 			});
 		});
 
@@ -320,7 +296,7 @@ module.exports = function(server){
 		socket.on("user-add", function(req) {
 			if (req.pass.length == 0 || req.name.length == 0) {
 	DEBUG("[user-add]\tparameter is unjust.");
-				io.sockets.emit("user-add-ret", { status:0, msg:"parameter is unjust." });
+				io.sockets.emit("user-add-ret", { status:0, msg:"parameter is unjust" });
 				return;
 			}
 
@@ -331,7 +307,11 @@ module.exports = function(server){
 			db.serialize(function() {
 				db.run("INSERT INTO Users (pass, name) VALUES (?,?)", req.pass, req.name, function(err){
 					if(err){
-						io.sockets.emit("user-add-ret", { status:0, msg:err.message, userinfo : tmp });
+						if(err.message.search("UNIQUE") >= 0){
+							io.sockets.emit("user-add-ret", { status:0, msg:"this user name already exists", userinfo : tmp });
+						}else{
+							io.sockets.emit("user-add-ret", { status:0, msg:"internal server error", userinfo : tmp });
+						}
 						return;
 					}
 
@@ -352,11 +332,8 @@ module.exports = function(server){
 							socket.flagLogin = 1;
 						}
 					}, function (err, rownum) {
-						if (err) {
-							io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
-						}
-						else if (rownum == 0) {
-							io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
+						if(err || rownum == 0){
+							io.sockets.emit("user-add-ret", { status:0, msg:"unknown error", userinfo : tmp });
 						}
 					});
 				});
@@ -378,6 +355,7 @@ module.exports = function(server){
 				db.each("SELECT * FROM Users WHERE name==? AND pass==?", req.name, req.pass, function(err, row) {
 					if(err) {
 						console.log("error: " + err);
+						io.sockets.emit("user-verify-ret", { status: 0, msg: "internal server error" });
 					}
 					else {
 						io.sockets.emit("user-verify-ret", { status:1, userinfo:{
@@ -400,19 +378,12 @@ module.exports = function(server){
 					}
 				}, function (err, rownum) {
 					if (err) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"Internal server error" });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"internal server error" });
 					}
 					else if (rownum == 0) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"user name or password error" });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"incorrect user name or password" });
 					}
 				});
-			});
-			db.close(function(err) {
-				if (err) {
-					console.error(err.message);
-					io.sockets.emit("user-verify-ret", { status:0, msg:err.message });
-					return;
-				}
 			});
 		});
 
@@ -438,7 +409,7 @@ module.exports = function(server){
 				}, function(err){
 					if (err) {
 						console.log(err);
-						io.sockets.emit("get-ret", { status:0, msg:err.message });
+						io.sockets.emit("get-ret", { status:0, msg: "internal server error" });
 					}
 				});
 			});
