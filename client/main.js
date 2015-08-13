@@ -182,7 +182,7 @@ function updatePosition(position){
 		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
 
 		$(".distance", x).text(Math.round(distance) + "m");
-		$(x).data("distance", distance)
+		$(x).attr("data-distance", distance)
 	});
 
 	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
@@ -413,9 +413,13 @@ function guiInit(){
 		$("#putcancel").fadeOut("slow");
 	});
 	$("#beaconmenu div").click(function(){
-		putBeacon($(this).data("type"), function(){
-			showNotify("put beacon here");
-		});
+		if($("#mybeacons li:first").data("distance") < 3){
+			showNotify("too near your beacon");
+		}else{
+			putBeacon($(this).data("type"), function(){
+				showNotify("put beacon here");
+			});
+		}
 		$("#beaconmenu").animate({
 			height: 0,
 			opacity: 0
