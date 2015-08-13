@@ -373,40 +373,33 @@ module.exports = function(server){
 			var tmp = new UserInfo();
 			var __pass = "";
 			db.serialize(function() {
-				db.each("SELECT * FROM Users WHERE name==?", req.name, function(err, row) {
+				db.each("SELECT * FROM Users WHERE name==? AND pass==?", req.name, req.pass, function(err, row) {
 					if(err) {
 						console.log("error: " + err);
 					}
 					else {
 						tmp.id = row.id;
-						// tmp.pass = row.pass;
-						__pass = row.pass;
 						tmp.name = row.name;
 						tmp.timestamp = row.update_date;
 	// console.log(tmp);
 						g_userInfo = tmp;
 						g_userInfo.pass = row.pass;
 
-						if (req.pass.length > 0 && __pass == req.pass) {
-							io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
+						io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
 
-							// ログイン成功。
-							// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
-							if (!socket.flagLogin) {
-								RegistSocketAPI(socket);
-								socket.flagLogin = 1;
-							}
-						}
-						else {
-							io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });
+						// ログイン成功。
+						// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
+						if (!socket.flagLogin) {
+							RegistSocketAPI(socket);
+							socket.flagLogin = 1;
 						}
 					}
 				}, function (err, rownum) {
 					if (err) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"Internal server error", userinfo : tmp });
 					}
 					else if (rownum == 0) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"user name or password error", userinfo : tmp });
 					}
 				});
 			});
