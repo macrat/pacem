@@ -103,19 +103,23 @@ function RegistSocketAPI(socket)
 	socket.on("remove", function(req) {
 		var db = new sqlite3.Database(fileDb);
 		db.serialize(function() {
-			db.each("SELECT * FROM Beacons WHERE userId == ? AND id == ?", g_userInfo.id, req.beaconId, function(err, row){
-				db.run("DELETE FROM Beacons WHERE userId = ? AND id = ?", g_userInfo.id, req.beaconId, function(err){
-					if(err){
-						io.sockets.emit("remove-ret", { status:0, msg:"unknown error" });
-					}else{
-						io.sockets.emit("remove-ret", { status:1 });
-					}
-				})
+			db.each("SELECT * FROM Beacons WHERE id == ?", req.beaconId, function(err, row){
+				if(row.userId != g_userInfo.id){
+					io.sockets.emit("remove-ret", { status:0, msg:"this beacon is not yours" });
+				}else{
+					db.run("DELETE FROM Beacons WHERE id == ?", req.beaconId, function(err){
+						if(err){
+							io.sockets.emit("remove-ret", { status:0, msg:"unknown error" });
+						}else{
+							io.sockets.emit("remove-ret", { status:1 });
+						}
+					})
+				}
 			}, function(err, rownum){
 				if(err){
 					io.sockets.emit("remove-ret", { status:0, msg:"unknown error" });
 				}else if(rownum == 0){
-					io.sockets.emit("remove-ret", { status:0, msg:"incorrect user name or password" });
+					io.sockets.emit("remove-ret", { status:0, msg:"no such beacon" });
 DEBUG("Beacon removed.");
 				}
 			});
@@ -197,11 +201,11 @@ DEBUG("[update-user-info]\tparameter is unjust.");
 		// 2 パスワードのみ変更
 		// 3 名前とパスワードを変更
 		var cState = 0;
-		if (data.name) {
+		if (req.data.name) {
 			// 名前の変更あり
 			cState = 1;
 		}
-		if (data.pass) {
+		if (req.data.pass) {
 			// パスワードの変更あり
 			if (cState == 1) {
 				// 名前とパスワードの変更
@@ -484,3 +488,23 @@ function DEBUG(msg)
 	console.log(msg);
 }
 
+
+function PRINT_DB()
+{
+	var db = new sqlite3.Database(fileDb);
+	var 
+	db.serialize(function() {
+		db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
+console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
+		});
+		db.each("SELECT id, pass, name, update_date FROM Users", function(err, row) {
+console.log(row.id + ": name=" + row.name + ", pass=" + row.pass + "  [" + row.update_date + "]");
+		});
+	});
+	db.close(function(err) {
+		if (err) {
+			console.error(err.message);
+			return;
+		}
+	});
+}
