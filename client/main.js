@@ -481,8 +481,6 @@ function guiInit(){
 	});
 
 
-	$("#username span").text(getUserInfo().name);
-
 	$("#username").click(function(){
 		$("#changeid_username").val(getUserInfo().name);
 		$("#account > div").css("display", "none");
@@ -542,13 +540,14 @@ function guiInit(){
 	function doLogin(){
 		login($("#login_username").val(), $("#login_password").val(), function(err){
 			if(err){
-				$("login_message")
+				$("#login_message")
 					.text(err)
 					.css("display", "block");
 			}else{
 				$("#account").animate({ opacity: 0 }, function(){
 					$("#account").css("display", "none");
 				});
+				$("#username span").text(getUserInfo().name);
 			}
 		});
 	}
@@ -564,7 +563,7 @@ function guiInit(){
 			password: $("#login_password").val()
 		}, function(err){
 			if(err){
-				$("login_message")
+				$("#login_message")
 					.text(err)
 					.css("display", "block");
 			}else{
@@ -572,6 +571,7 @@ function guiInit(){
 					$("#account").css("display", "none");
 				});
 				showNotify("created account<br>welcome " + getUserInfo().name);
+				$("#username span").text(getUserInfo().name);
 			}
 		});
 	});
