@@ -82,6 +82,7 @@ function cameraInit(){
 					changeMessage("");
 				}
 			}else{
+				$("#account").animate({ opacity: 0 });
 				changeMessage(message + (detail?"<br>" + detail:""));
 			}
 		});
@@ -350,7 +351,14 @@ function threeInit(){
 		renderer.render(scene, camera);
 	})();
 
-	navigator.geolocation.watchPosition(updatePosition);
+	navigator.geolocation.watchPosition(updatePosition, function(err){
+		$("#account").animate({ opacity: 0 });
+		if(err.code == 1){
+			changeMessage("couldn't get location data<br>please check settings");
+		}else{
+			changeMessage("couldn't get location data");
+		}
+	});
 
 	window.addEventListener('resize', function(){
 			camera.aspect = window.innerWidth / window.innerHeight;
@@ -459,6 +467,99 @@ function guiInit(){
 
 	$("#username span").text(getUserInfo().name);
 
+	$("#username").click(function(){
+		$("#changeid_username").val(getUserInfo().name);
+		$("#account > div").css("display", "none");
+		$("#changeid").css("display", "block");
+		$("#account")
+			.css({
+				display: "flex",
+				opacity: 0
+			})
+			.animate({ opacity: 1 })
+	});
+	function changeName(){
+		$("#account").animate({ opacity: 0 }, function(){
+			$("#account").css("display", "none");
+		});
+
+		if(($("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != "") || $("#changeid_password").val() != ""){
+			updateUserInfo({
+					name: $("#changeid_username").val() || null,
+					password: $("#changeid_password").val() || null
+				}, function(err){
+					if(err){
+						showNotify("failed change account info<br>" + err);
+					}else{
+						showNotify("success");
+						$("#username span").text(getUserInfo().name);
+					}
+				});
+		}
+	}
+	$("#changeid_button").click(changeName);
+	$("#changeid input").keyup("input", function(e){
+		if(e.keyCode == 13){
+			changeName();
+		}else{
+			setTimeout(function(){
+				var name_changed = $("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != "";
+				var pass_changed = $("#changeid_password").val() != "";
+
+				if(name_changed && pass_changed){
+					$("#changeid_button").text("change ID/password");
+				}else if(name_changed){
+					$("#changeid_button").text("change ID");
+				}else if(pass_changed){
+					$("#changeid_button").text("change password");
+				}else{
+					$("#changeid_button").text("cancel");
+				}
+			}, 100);
+		}
+	});
+
+	$("#account").css("display", "flex");
+	$("#account > div").css("display", "none");
+	$("#login").css("display", "block");
+
+	function doLogin(){
+		login($("#login_username").val(), $("#login_password").val(), function(err){
+			if(err){
+				$("login_message")
+					.text(err)
+					.css("display", "block");
+			}else{
+				$("#account").animate({ opacity: 0 }, function(){
+					$("#account").css("display", "none");
+				});
+			}
+		});
+	}
+	$("#login input").keyup("input", function(e){
+		if(e.keyCode == 13){
+			doLogin();
+		}
+	});
+	$("#login_button").click(doLogin);
+	$("#create_button").click(function(){
+		createAccount({
+			name: $("#login_username").val(),
+			password: $("#login_password").val()
+		}, function(err){
+			if(err){
+				$("login_message")
+					.text(err)
+					.css("display", "block");
+			}else{
+				$("#account").animate({ opacity: 0 }, function(){
+					$("#account").css("display", "none");
+				});
+				showNotify("created account<br>welcome " + getUserInfo().name);
+			}
+		});
+	});
+
 
 	window.addEventListener('deviceorientation', function(event) {
 		  updateIndicator(null, event);
@@ -498,6 +599,11 @@ function guiInit(){
 }
 
 $(function(){
+	if(!navigator.geolocation){
+		$("#account").animate({ opacity: 0 });
+		changeMessage("this browser doesn't supported geolocation");
+	}
+
 	(function loadingAnimation(){
 		var target_opacity = 1.0;
 		if($("#loading").css("opacity") == 1.0){
