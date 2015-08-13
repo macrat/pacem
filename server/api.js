@@ -55,9 +55,6 @@ module.exports = function(server){
 	}
 
 
-	var g_userInfo = new UserInfo();
-
-
 	// ソケットに各種 API を関連付ける。
 	function RegistSocketAPI(socket)
 	{
@@ -69,7 +66,7 @@ module.exports = function(server){
 			db.serialize(function() {
 				// ビーコン追加サンプル
 				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)");
-				stmt.run(g_userInfo.id, req.lat, req.lng, req.alt, req.type, function(err){
+				stmt.run(socket.user.id, req.lat, req.lng, req.alt, req.type, function(err){
 					if(err){
 						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
 					}else{
@@ -79,14 +76,13 @@ module.exports = function(server){
 				stmt.finalize();
 			});
 			db.close();
-
 		});
 		socket.on("get-my-beacons", function(req) {
 			// ビーコン取得サンプル
 			var db = new sqlite3.Database(fileDb);
 			var tmp = new Array();
 			db.serialize(function() {
-				db.each("SELECT * FROM Beacons WHERE userId=?", g_userInfo.id, function(err, row) {
+				db.each("SELECT * FROM Beacons WHERE userId=?", socket.user.id, function(err, row) {
 	//				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 					tmp.push(new Beacon({
 						userId : row.userId,
@@ -115,7 +111,7 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
 				db.each("SELECT * FROM Beacons WHERE id == ?", req.beaconId, function(err, row){
-					if(row.userId != g_userInfo.id){
+					if(row.userId != socket.user.id){
 						io.sockets.emit("remove-ret", { status:0, msg:"this beacon is not yours" });
 					}else{
 						db.run("DELETE FROM Beacons WHERE id == ?", req.beaconId, function(err){
@@ -151,7 +147,7 @@ module.exports = function(server){
 			var emsg = "";
 			db.serialize(function() {
 				var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.npass, g_userInfo.name, g_userInfo.pass, function(err) {
+				stmt.run(req.npass, socket.user.name, socket.user.pass, function(err) {
 					if (err) {
 						emsg = "Can't change user password.";
 					}
@@ -180,7 +176,7 @@ module.exports = function(server){
 			var emsg = "";
 			db.serialize(function() {
 				var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.nname, g_userInfo.name, g_userInfo.pass, function(err) {
+				stmt.run(req.nname, socket.user.name, socket.user.pass, function(err) {
 					if (err) {
 						emsg = "Can't change user name.";
 					}
@@ -239,7 +235,7 @@ module.exports = function(server){
 				var stmt;
 				if (cState == 3) {
 					stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, req.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.name, req.pass, socket.user.name, socket.user.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name or password.";
 						}
@@ -247,7 +243,7 @@ module.exports = function(server){
 				}
 				else if (cState == 2) {
 					stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.pass, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.pass, socket.user.name, socket.user.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user password.";
 						}
@@ -255,7 +251,7 @@ module.exports = function(server){
 				}
 				else if (cState == 1) {
 					stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, g_userInfo.name, g_userInfo.pass, function(err) {
+					stmt.run(req.name, socket.user.name, socket.user.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name.";
 						}
@@ -280,8 +276,8 @@ module.exports = function(server){
 		socket.on("user-delete", function(req) {
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
-				db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", g_userInfo.name, g_userInfo.pass, function(err, row){
-					db.run("DELETE FROM Users WHERE name == ?", g_userInfo.name, function(err){
+				db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", socket.user.name, socket.user.pass, function(err, row){
+					db.run("DELETE FROM Users WHERE name == ?", socket.user.name, function(err){
 						if(err){
 							io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
 						}else{
@@ -377,9 +373,8 @@ module.exports = function(server){
 						tmp.name = row.name;
 						tmp.timestamp = row.update_date;
 	// console.log(tmp);
-						g_userInfo = tmp;
-						g_userInfo.pass = row.pass;
-
+						socket.user = tmp;
+						socket.user.pass = row.pass;
 						io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
 
 						// ログイン成功。
