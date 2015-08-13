@@ -81,41 +81,6 @@ function RegistSocketAPI(socket)
 		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, req.type, timestamp);
 		io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 	});
-	// 周辺のビーコンを取得
-	socket.on("get", function(req) {
-// DEBUG("Get Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
-		// ビーコン取得サンプル
-		var db = new sqlite3.Database(fileDb);
-		var tmp = new Array();
-		db.serialize(function() {
-			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
-//				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
-			});
-		});
-		db.close(function(err) {
-			if (err) {
-				console.error(err.message);
-				return;
-			}
-
-
-			// 周辺にあるビーコンを取得する処理
-			var tmp2 = new Array();
-			var n = 1.0;
-			for (var i = 0; i < tmp.length; ++i) {
-				// 近い。
-				// (a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2 < n
-				if (Math.pow(tmp[i].lat - req.lat, 2) + Math.pow(tmp[i].lng - req.lng, 2) < n) {
-					tmp2.push(tmp[i]);
-				}
-// console.log("IN LOOP" + i);
-			}
-
-
-			io.sockets.emit("get-ret", { beacons:tmp2 });
-		});
-	});
 	socket.on("get-my-beacons", function(req) {
 		// ビーコン取得サンプル
 		var db = new sqlite3.Database(fileDb);
@@ -132,36 +97,6 @@ function RegistSocketAPI(socket)
 			}
 
 			io.sockets.emit("get-my-beacons-ret", { beacons:tmp });
-		});
-	});
-	// あるビーコンを検索する処理
-	socket.on("search", function(req) {
-// DEBUG("Search. " + req.beaconId);
-		var db = new sqlite3.Database(fileDb);
-		var tmp = new Beacon();
-		db.serialize(function() {
-			db.each("SELECT * FROM Beacons WHERE id=?", req.beaconId, function(err, row) {
-				if(err){
-					console.log("error: " + err);
-				}else{
-					tmp.userId = row.userId;
-					tmp.beaconId = row.id;
-					tmp.lat = row.lat;
-					tmp.lng = row.lng;
-					tmp.alt = row.alt;
-					tmp.type = row.type;
-					tmp.timestamp = row.update_date;
-				}
-			});
-		});
-		db.close(function(err) {
-			if (err) {
-				console.error(err.message);
-				return;
-			}
-
-			io.sockets.emit("search-ret", { beacon:tmp });
-DEBUG("Beacon Searched.");
 		});
 	});
 	// ユーザーの作成した特定のビーコンを削除する処理
@@ -367,6 +302,72 @@ DEBUG("[user-add]\tparameter is unjust.");
 		});
 	});
 
+	// 周辺のビーコンを取得
+	socket.on("get", function(req) {
+// DEBUG("Get Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
+		// ビーコン取得サンプル
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new Array();
+		db.serialize(function() {
+			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
+//				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
+			});
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+
+			// 周辺にあるビーコンを取得する処理
+			var tmp2 = new Array();
+			var n = 1.0;
+			for (var i = 0; i < tmp.length; ++i) {
+				// 近い。
+				// (a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2 < n
+				if (Math.pow(tmp[i].lat - req.lat, 2) + Math.pow(tmp[i].lng - req.lng, 2) < n) {
+					tmp2.push(tmp[i]);
+				}
+// console.log("IN LOOP" + i);
+			}
+
+
+			io.sockets.emit("get-ret", { beacons:tmp2 });
+		});
+	});
+
+	// あるビーコンを検索する処理
+	socket.on("search", function(req) {
+// DEBUG("Search. " + req.beaconId);
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new Beacon();
+		db.serialize(function() {
+			db.each("SELECT * FROM Beacons WHERE id=?", req.beaconId, function(err, row) {
+				if(err){
+					console.log("error: " + err);
+				}else{
+					tmp.userId = row.userId;
+					tmp.beaconId = row.id;
+					tmp.lat = row.lat;
+					tmp.lng = row.lng;
+					tmp.alt = row.alt;
+					tmp.type = row.type;
+					tmp.timestamp = row.update_date;
+				}
+			});
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+			io.sockets.emit("search-ret", { beacon:tmp });
+DEBUG("Beacon Searched.");
+		});
+	});
 
 	// DEBUG 用
 	socket.on("get-db", function(req) {
