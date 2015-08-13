@@ -16,7 +16,7 @@ function createAccount(data, callback)
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 
-	g_socket.emit("user-add", { pass:data.password, name:data.name });
+	g_socket.emit("user-add", { name:data.name, pass:data.password });
 	function cb(data) {
 		g_socket.removeListener("user-add-ret", cb);
 
@@ -38,7 +38,7 @@ function login(userid, password, callback){
 	//  err -- error message string. if success, this is null.
 
 
-	g_socket.emit("user-verify", { pass:userid, name:password });
+	g_socket.emit("user-verify", { name:userid, pass:password });
 	function cb(data) {
 		g_socket.removeListener("user-verify-ret", cb);
 
@@ -49,7 +49,7 @@ function login(userid, password, callback){
 
 			callback(null);
 		}else{
-			callback("incorrect user ID or password");
+			callback(data.msg);
 		}
 	}
 	g_socket.on("user-verify-ret", cb);
@@ -79,10 +79,14 @@ function updateUserInfo(data, callback){
 		name: data.name,
 		pass: data.password
 	});
-	function cb(data){
+	function cb(err){
 		g_socket.removeListener("update-user-info-ret", cb);
 
-		callback(data);
+		if(!err && data.name){
+			g_userName = data.name;
+		}
+
+		callback(err);
 	}
 	g_socket.on("update-user-info-ret", cb);
 }
