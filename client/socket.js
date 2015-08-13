@@ -124,7 +124,7 @@ function getNearBeacons(callback){
 					type: data.beacons[i].type
 				});
 			}
-			callback(ls, null);  // TODO: Support error handling (server side)
+			callback(ls, data.msg);
 		}
 		g_socket.on("get-ret", cb);
 	}, function(err){
@@ -158,7 +158,7 @@ function getMyBeacons(callback){
 				type: data.beacons[i].type
 			});
 		}
-		callback(ls, null);  // TODO: Support error handling (server side)
+		callback(ls, data.msg);
 	}
 	g_socket.on("get-my-beacons-ret", cb);
 }
@@ -175,7 +175,11 @@ function putBeacon(pType, callback){
 		console.log("send");
 		g_socket.emit("set", { type : pType, lat : position.coords.latitude, lng : position.coords.longitude })
 
-		callback(null);  // TODO: Support error handling (server side)
+		function cb(data){
+			g_socket.removeListener("set-ret", cb);
+			callback(data.msg);
+		}
+		g_socket.on("set-ret", cb);
 	}, function(err){
 		callback("failed get position");
 	});
@@ -194,7 +198,7 @@ function getBeacon(id, callback){
 	g_socket.emit("search", { beaconId : id });
 	function cb(data){
 		g_socket.removeListener("search-ret", cb);
-		callback(data.beacon, null);  // TODO: Support error handling (server side)
+		callback(data.beacon, data.msg);
 	}
 	g_socket.on("search-ret", cb);
 }
