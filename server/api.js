@@ -56,7 +56,7 @@ module.exports = function(server){
 
 
 	// ソケットに各種 API を関連付ける。
-	function RegistSocketAPI(socket)
+	function RegistSocketAPI(socket, user_info)
 	{
 		// 各種 API
 		// 位置情報のセット
@@ -66,7 +66,7 @@ module.exports = function(server){
 			db.serialize(function() {
 				// ビーコン追加サンプル
 				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)");
-				stmt.run(socket.user.id, req.lat, req.lng, req.alt, req.type, function(err){
+				stmt.run(user_info.id, req.lat, req.lng, req.alt, req.type, function(err){
 					if(err){
 						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
 					}else{
@@ -82,7 +82,7 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			var tmp = new Array();
 			db.serialize(function() {
-				db.each("SELECT * FROM Beacons WHERE userId=?", socket.user.id, function(err, row) {
+				db.each("SELECT * FROM Beacons WHERE userId=?", user_info.id, function(err, row) {
 	//				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 					tmp.push(new Beacon({
 						userId : row.userId,
@@ -93,7 +93,7 @@ module.exports = function(server){
 						alt : row.alt,
 						type : row.type,
 						timestamp : row.update_date,
-						username:socket.user.name}));
+						username: user_info.name}));
 				});
 			});
 			db.close(function(err) {
@@ -111,7 +111,7 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
 				db.each("SELECT * FROM Beacons WHERE id == ?", req.beaconId, function(err, row){
-					if(row.userId != socket.user.id){
+					if(row.userId != user_info.id){
 						io.sockets.emit("remove-ret", { status:0, msg:"this beacon is not yours" });
 					}else{
 						db.run("DELETE FROM Beacons WHERE id == ?", req.beaconId, function(err){
@@ -147,7 +147,7 @@ module.exports = function(server){
 			var emsg = "";
 			db.serialize(function() {
 				var stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.npass, socket.user.name, socket.user.pass, function(err) {
+				stmt.run(req.npass, user_info.name, user_info.pass, function(err) {
 					if (err) {
 						emsg = "Can't change user password.";
 					}
@@ -176,7 +176,7 @@ module.exports = function(server){
 			var emsg = "";
 			db.serialize(function() {
 				var stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-				stmt.run(req.nname, socket.user.name, socket.user.pass, function(err) {
+				stmt.run(req.nname, user_info.name, user_info.pass, function(err) {
 					if (err) {
 						emsg = "Can't change user name.";
 					}
@@ -235,7 +235,7 @@ module.exports = function(server){
 				var stmt;
 				if (cState == 3) {
 					stmt = db.prepare("UPDATE Users SET name = ?, pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, req.pass, socket.user.name, socket.user.pass, function(err) {
+					stmt.run(req.name, req.pass, user_info.name, user_info.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name or password.";
 						}
@@ -243,7 +243,7 @@ module.exports = function(server){
 				}
 				else if (cState == 2) {
 					stmt = db.prepare("UPDATE Users SET pass = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.pass, socket.user.name, socket.user.pass, function(err) {
+					stmt.run(req.pass, user_info.name, user_info.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user password.";
 						}
@@ -251,7 +251,7 @@ module.exports = function(server){
 				}
 				else if (cState == 1) {
 					stmt = db.prepare("UPDATE Users SET name = ? WHERE name == ? AND pass == ?");
-					stmt.run(req.name, socket.user.name, socket.user.pass, function(err) {
+					stmt.run(req.name, user_info.name, user_info.pass, function(err) {
 						if (err) {
 							emsg = "Can't change user name.";
 						}
@@ -276,8 +276,8 @@ module.exports = function(server){
 		socket.on("user-delete", function(req) {
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
-				db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", socket.user.name, socket.user.pass, function(err, row){
-					db.run("DELETE FROM Users WHERE name == ?", socket.user.name, function(err){
+				db.each("SELECT * FROM Users WHERE name == ? AND pass == ?", user_info.name, user_info.pass, function(err, row){
+					db.run("DELETE FROM Users WHERE name == ?", user_info.name, function(err){
 						if(err){
 							io.sockets.emit("user-delete-ret", { status:0, msg:"unknown error" });
 						}else{
@@ -336,10 +336,21 @@ module.exports = function(server){
 					}
 
 					db.each("SELECT * FROM Users WHERE name == ?", req.name, function(err, row) {
-						var u = new UserInfo(row.id, 0, row.name, row.update_date);
-						socket.user = u;
-						socket.user.pass = row.pass;
-						io.sockets.emit("user-add-ret", { status:1, userinfo : u });
+						io.sockets.emit("user-add-ret", { status:1, userinfo: {
+							id: row.id,
+							name: row.name,
+							timestamp: row.update_date
+						} });
+
+						if (!socket.flagLogin) {
+							RegistSocketAPI(socket, {
+								id: row.id,
+								name: row.name,
+								timestamp: row.update_date,
+								pass: row.pass
+							});
+							socket.flagLogin = 1;
+						}
 					}, function (err, rownum) {
 						if (err) {
 							io.sockets.emit("user-add-ret", { status:0, msg:"Can't get new user id : " + err.message, userinfo : tmp });
@@ -363,35 +374,36 @@ module.exports = function(server){
 		socket.on("user-verify", function(req) {
 			// req.id, req.pass
 			var db = new sqlite3.Database(fileDb);
-			var tmp = new UserInfo();
-			var __pass = "";
 			db.serialize(function() {
 				db.each("SELECT * FROM Users WHERE name==? AND pass==?", req.name, req.pass, function(err, row) {
 					if(err) {
 						console.log("error: " + err);
 					}
 					else {
-						tmp.id = row.id;
-						tmp.name = row.name;
-						tmp.timestamp = row.update_date;
-	// console.log(tmp);
-						socket.user = tmp;
-						socket.user.pass = row.pass;
-						io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
+						io.sockets.emit("user-verify-ret", { status:1, userinfo:{
+							id: row.id,
+							name: row.name,
+							timestamp: row.update_date
+						} });
 
 						// ログイン成功。
 						// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
 						if (!socket.flagLogin) {
-							RegistSocketAPI(socket);
+							RegistSocketAPI(socket, {
+								id: row.id,
+								name: row.name,
+								pass: row.pass,
+								timestamp: row.update_date
+							});
 							socket.flagLogin = 1;
 						}
 					}
 				}, function (err, rownum) {
 					if (err) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"Internal server error", userinfo : tmp });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"Internal server error" });
 					}
 					else if (rownum == 0) {
-						io.sockets.emit("user-verify-ret", { status:0, msg:"user name or password error", userinfo : tmp });
+						io.sockets.emit("user-verify-ret", { status:0, msg:"user name or password error" });
 					}
 				});
 			});
