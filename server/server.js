@@ -58,7 +58,6 @@ function UserInfo(id, pass, name, timestamp)
 }
 
 
-var g_beaconDB = new Array();
 var g_userInfo = new UserInfo();
 
 
@@ -80,7 +79,6 @@ function RegistSocketAPI(socket)
 
 		var timestamp = Math.floor( new Date().getTime() / 1000 );
 		var tmp = new Beacon(g_userInfo.id, req.beaconId, req.lat, req.lng, req.alt, req.type, timestamp);
-		g_beaconDB.push(tmp);
 		io.sockets.emit("set-ret", { status:"success" , beacon : tmp });
 	});
 	// 周辺のビーコンを取得
@@ -358,7 +356,10 @@ DEBUG("[user-add]\tparameter is unjust.");
 
 				// ログイン成功。
 				// APIサーバー開発法第二条に従い、各種 API を使用可能にする。
-				RegistSocketAPI(socket);
+				if (!socket.flagLogin) {
+					RegistSocketAPI(socket);
+					socket.flagLogin = 1;
+				}
 			}
 			else {
 				io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });

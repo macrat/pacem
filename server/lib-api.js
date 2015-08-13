@@ -98,7 +98,9 @@ function updateUserInfo(data, callback){
 
 
 	// debug: do something here
-	callback(null);
+	if (callback) {
+		callback(null);
+	}
 }
 
 
@@ -117,9 +119,11 @@ function getNearBeacons(callback){
 
 
 	g_socket.emit("get", { lat : g_lat, lng : g_lng });
-	g_socket.on("get-ret", function (data) {
-		callback(data.beacons, null);
-	});
+	if (callback) {
+		g_socket.on("get-ret", function (data) {
+			callback(data.beacons, null);
+		});
+	}
 }
 
 
@@ -137,9 +141,11 @@ function getMyBeacons(callback){
 	//   timestamp -- beacon established date time.
 
 	g_socket.emit("get-my-beacons", {});
-	g_socket.on("get-my-beacons-ret", function (data) {
-		callback(data.beacons, null);
-	});
+	if (callback) {
+		g_socket.on("get-my-beacons-ret", function (data) {
+			callback(data.beacons, null);
+		});
+	}
 }
 
 
@@ -155,7 +161,9 @@ function putBeacon(pType, callback){
 
 
 	// debug: do something here
-	callback(null);
+	if (callback) {
+		callback(null);
+	}
 }
 
 
@@ -169,10 +177,11 @@ function getBeacon(id, callback){
 
 
 	g_socket.emit("search", { beaconId : id });
-	g_socket.on("search-ret", function (data) {
-		callback(data.beacon, null);
-	});
-
+	if (callback) {
+		g_socket.on("search-ret", function (data) {
+			callback(data.beacon, null);
+		});
+	}
 
 /*	// debug: do something here
 	callback({
@@ -194,11 +203,9 @@ function removeBeacon(id, callback){
 
 
 	g_socket.emit("remove", { beaconId : id });
-	g_socket.on("remove-ret", function (err) {
-		callback(err.msg, null);
-	});
-
-
-	// debug: do something here
-	callback(null);
+	if (callback) {
+		g_socket.on("remove-ret", function (err) {
+			callback(err.msg, null);
+		});
+	}
 }

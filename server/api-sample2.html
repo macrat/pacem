@@ -23,7 +23,7 @@
 					$("#login-panel").hide();
 					$("#second-panel").show();
 $("#info").text("");
-$("#info").append("ID:" + data.userinfo.name + "<br>");
+$("#info").prepend("ID:" + data.userinfo.name + "<br>");
 				}
 
 
@@ -49,45 +49,73 @@ $("#info").append("ID:" + data.userinfo.name + "<br>");
 		$("#update-user-geo").click(function() {
 			// 位置情報の更新
 			updateUserInfo({ lat : $("#input-user-lat").val(), lng : $("#input-user-lng").val() }, function (){
-$("#info").append("[GEO UPDATE]:" + $("#input-user-lat").val() + "," + $("#input-user-lng").val() + "<br>");
-
+$("#info").prepend("[GEO UPDATE]:" + $("#input-user-lat").val() + "," + $("#input-user-lng").val() + "<br>");
 				$("#input-user-lat").val("");
 				$("#input-user-lng").val("");
 			});
+
 		});
 
 
+		var flagSetCallback_setBeacon = 0;
 		$("#set-beacon").click(function() {
-			putBeacon(0, function() {
-				var tmp = getUserInfo();
-$("#info").append("[SET BEACON]:" + tmp.lat + "," + tmp.lng + "<br>");
-			});
+			if (!flagSetCallback_setBeacon) {
+				putBeacon(0, function() {
+var tmp = getUserInfo();
+$("#info").prepend("[SET BEACON]:" + tmp.lat + "," + tmp.lng + "<br>");
+				});
+				flagSetCallback_updateUserInfo = 1;
+			}
+			else {
+				putBeacon(0);
+			}
 		});
+		var flagSetCallback_getMyBeacons = 0;
 		$("#get-my-beacons").click(function() {
-			getMyBeacons(function(beacons) {
-				for (var i = 0; i < beacons.length; ++i) {
-$("#info").append("[MY BEACON]:" + beacons[i].beaconId + "(" + beacons[i].lat + "," + beacons[i].lng + ")<br>");
-				}
-			});
+			if (!flagSetCallback_getMyBeacons) {
+				getMyBeacons(function(beacons) {
+					for (var i = 0; i < beacons.length; ++i) {
+$("#info").prepend("[MY BEACON]:" + beacons[i].beaconId + "(" + beacons[i].lat + "," + beacons[i].lng + ")<br>");
+					}
+				});
+				flagSetCallback_getMyBeacons = 1;
+			}
+			else {
+				getMyBeacons();
+			}
 		});
+		var flagSetCallback_getNearBeacon = 0;
 		$("#get-near-beacons").click(function() {
-			getNearBeacons(function(beacons) {
-				for (var i = 0; i < beacons.length; ++i) {
-$("#info").append("[NEAR BEACON]:" + beacons[i].beaconId + "(" + beacons[i].lat + "," + beacons[i].lng + ")<br>");
-				}
-			});
+			if (!flagSetCallback_getNearBeacon) {
+				getNearBeacons(function(beacons) {
+					for (var i = 0; i < beacons.length; ++i) {
+$("#info").prepend("[NEAR BEACON]:" + beacons[i].beaconId + "(" + beacons[i].lat + "," + beacons[i].lng + ")<br>");
+					}
+				});
+				flagSetCallback_getNearBeacon = 1;
+			}
+			else {
+				getNearBeacons();
+			}
 		});
 
+		var flagSetCallback_removeBeacon = 0;
 		$("#remove-beacon").click(function() {
-			removeBeacon($("#input-remove-beacon-id").val(), function(err) {
-				if (err) {
-$("#info").append("[ERROR RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + ":" + err + "<br>");
-					return;
-				}
+			if (!flagSetCallback_removeBeacon) {
+				removeBeacon($("#input-remove-beacon-id").val(), function(err) {
+					if (err) {
+$("#info").prepend("[ERROR RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + ":" + err + "<br>");
+						return;
+					}
 
-$("#info").append("[RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + "<br>");
-				$("#input-remove-beacon-id").val("");
-			});
+$("#info").prepend("[RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + "<br>");
+					$("#input-remove-beacon-id").val("");
+				});
+				flagSetCallback_removeBeacon = 1;
+			}
+			else {
+				removeBeacon($("#input-remove-beacon-id").val());
+			}
 		});
 	});
 	</script>
@@ -104,8 +132,6 @@ $("#info").append("[RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + "<br>
 
 <body>
 	<h1>API Server Client Sample</h1>
-	<div id="info" class="panel" style="color:red; font-size:24px;">未ログイン</div>
-
 	<div id="login-panel" class="panel">
 		<h2>1.LOGIN / SIGNUP</h2>
 		NAME:<input type="text" id="input-user-name"><br>
@@ -134,5 +160,7 @@ $("#info").append("[RMOVE BEACON]:" + $("#input-remove-beacon-id").val() + "<br>
 			<button id="get-my-beacons">GetMyBeacons</button>
 		</div>
 	</div>
+
+	<div id="info" class="panel" style="color:red; font-size:24px;overflow: scroll;height:400px;">未ログイン</div>
 </body>
 </html>
