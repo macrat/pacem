@@ -7,6 +7,7 @@
   "author": "RadioGym",
   "dependencies": {
 	  "socket.io": "*",
-	  "sqlite3": "*"
+	  "sqlite3": "*",
+	  "express": "*"
   }
 }
