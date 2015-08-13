@@ -605,6 +605,7 @@ function guiInit(){
 				removeBeacon(beaconid, function(err){
 					if(!err){
 						showNotify("beacon removed");
+						updateBeacons();
 					}else{
 						showNotify("failed beacon remove<br>" + err);
 					}
@@ -618,7 +619,7 @@ function guiInit(){
 			var duration = (new Date()) - $(".holded_beacon").data("holdstart");
 			$(".holded_beacon").css("background-color", "rgba(0, 0, 0, " + Math.min(0.3, 0.05 + duration / 1000 / 5) + ")");
 			if(duration > 1000){
-				rmBeacon($(".holded_beacon").data("beaconid"));
+				rmBeacon($(".holded_beacon").data("id"));
 				$(".holded_beacon").removeClass("holded_beacon");
 				$("#mybeacons li").css({
 					backgroundColor: "",

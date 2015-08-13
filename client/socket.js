@@ -111,7 +111,7 @@ function getNearBeacons(callback){
 				ls.push({
 					id: data.beacons[i].beaconId,
 					place: [data.beacons[i].lat, data.beacons[i].lng, data.beacons[i].alt],
-					owner: data.beacons[i].userId,  // TODO: Change to user name (server side)
+					owner: data.beacons[i].username,
 					date: new Date(data.beacons[i].timestamp),
 					type: data.beacons[i].type
 				});
@@ -140,7 +140,7 @@ function getMyBeacons(callback){
 			ls.push({
 				id: data.beacons[i].beaconId,
 				place: [data.beacons[i].lat, data.beacons[i].lng, data.beacons[i].alt],
-				owner: data.beacons[i].userId,  // TODO: Change to user name (server side)
+				owner: data.beacons[i].username,
 				date: new Date(data.beacons[i].timestamp),
 				type: data.beacons[i].type
 			});
@@ -196,6 +196,7 @@ function removeBeacon(id, callback){
 	//  err -- error message string. if success, this is null.
 
 
+	console.log(id);
 	g_socket.emit("remove", { beaconId : id });
 	function cb(data){
 		g_socket.removeListener("remove-ret", cb);
