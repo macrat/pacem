@@ -1,13 +1,29 @@
 // connection server
 
 
-function login(callback){
+function login(userid, password, callback){
 	// login.
 	//
+	// userid -- user ID string.
+	// password -- password string.
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 
 	// debug: do something here
+	callback(null);
+}
+
+
+function createAccount(data, callback){
+	// create user account.
+	//
+	// data -- new user information.
+	//  name -- unique user name.
+	//  password -- password.
+	// callback -- callback function.
+	//  err -- error message string. if success, this is null.
+
+	// debug: do domething here
 	callback(null);
 }
 

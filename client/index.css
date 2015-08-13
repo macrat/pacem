@@ -49,9 +49,8 @@ canvas {
 	padding: 1em;
 }
 
-#confirm {
+#account, #confirm {
 	position: fixed;
-	z-index: 11;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -60,8 +59,14 @@ canvas {
 	height: 100%;
 	display: none;
 }
-#confirm > div {
-	padding: 2em;
+#account {
+	z-index: 11;
+}
+#confirm {
+	z-index: 12;
+}
+#account > div, #confirm > div {
+	padding: 1.5em;
 	font-size: 150%;
 	background-color: rgba(255, 255, 255, 0.8);
 	text-align: center;
@@ -73,13 +78,42 @@ canvas {
 	color: gray;
 	background-color: rgba(255, 255, 255, 0.5);
 }
+
 #confirm_no:active {
 	font-size: 90%;
 	margin: 1.05em .7em .05em;
 }
 #confirm_yes:active {
 	font-size: 90%;
-	margin: 1.05em .75em .05em;
+	margin: 1.05em .725em .05em;
+}
+
+#login_button, #create_button, #changeid_btton {
+	display: inline-block;
+	padding: .1em .5em;
+	margin: 0 .5em;
+	color: gray;
+	background-color: rgba(255, 255, 255, 0.5);
+}
+#account input {
+	font-size: 110%;
+	border: 1px solid gray;
+}
+#login_message {
+	display: none;
+	font-weight: bold;
+}
+#login_button:active {
+	font-size: 90%;
+	margin: .05em .75em;
+}
+#create_button:active {
+	font-size: 90%;
+	margin: .05em 1em;
+}
+#changeid_button:active {
+	font-size: 90%;
+	margin: .05em .25em;
 }
 
 #openmenu {

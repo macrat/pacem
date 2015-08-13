@@ -459,6 +459,91 @@ function guiInit(){
 
 	$("#username span").text(getUserInfo().name);
 
+	$("#username").click(function(){
+		$("#changeid_username").val(getUserInfo().name);
+		$("#account > div").css("display", "none");
+		$("#changeid").css("display", "block");
+		$("#account")
+			.css({
+				display: "flex",
+				opacity: 0
+			})
+			.animate({ opacity: 1 })
+	});
+	function changeName(){
+		$("#account").animate({ opacity: 0 }, function(){
+			$("#account").css("display", "none");
+		});
+
+		if($("#changeid_username").val() != getUserInfo().name && $("#changeid_username").val() != ""){
+			updateUserInfo({
+					name: $("#changeid_username").val()
+				}, function(err){
+					if(err){
+						showNotify("failed change name<br>" + err);
+					}else{
+						showNotify("changed name");
+						$("#username span").text(getUserInfo().name);
+					}
+				});
+		}
+	}
+	$("#changeid_button").click(changeName);
+	$("#changeid_username").keyup("input", function(e){
+		if(e.keyCode == 13){
+			changeName();
+		}else{
+			setTimeout(function(){
+				if($("#changeid_username").val() == getUserInfo().name || $("#changeid_username").val() == ""){
+					$("#changeid_button").text("cancel");
+				}else{
+					$("#changeid_button").text("change ID");
+				}
+			}, 100);
+		}
+	});
+
+	$("#account").css("display", "flex");
+	$("#account > div").css("display", "none");
+	$("#login").css("display", "block");
+
+	function doLogin(){
+		login($("#login_username").val(), $("#login_password").val(), function(err){
+			if(err){
+				$("login_message")
+					.text(err)
+					.css("display", "block");
+			}else{
+				$("#account").animate({ opacity: 0 }, function(){
+					$("#account").css("display", "none");
+				});
+			}
+		});
+	}
+	$("#login input").keyup("input", function(e){
+		if(e.keyCode == 13){
+			doLogin();
+		}
+	});
+	$("#login_button").click(doLogin);
+	$("#create_button").click(function(){
+		createAccount({
+			name: $("#login_username").val(),
+			password: $("#login_password").val()
+		}, function(err){
+			if(err){
+				$("login_message")
+					.text(err)
+					.css("display", "block");
+			}else{
+				$("#account").animate({ opacity: 0 }, function(){
+					$("#account").css("display", "none");
+				});
+				showNotify("created account<br>welcome " + getUserInfo().name);
+			}
+		});
+	});
+
 
 	window.addEventListener('deviceorientation', function(event) {
 		  updateIndicator(null, event);
