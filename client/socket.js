@@ -1,30 +1,73 @@
 // connection server
 
 
-function login(userid, password, callback){
-	// login.
-	//
-	// userid -- user ID string.
-	// password -- password string.
-	// callback -- callback function.
-	//  err -- error message string. if success, this is null.
+var g_socket;
+var g_userId = 0;
+var g_userName = "";
+// 位置情報
+var g_lat, g_lng;
 
-	// debug: do something here
-	callback(null);
+
+function InitSocket(socket, connectCallback, disconnectCallback)
+{
+	g_socket = socket;
+	//サーバから受け取るイベント
+	g_socket.on("connect", connectCallback);
+	g_socket.on("disconnect", disconnectCallback);
 }
 
 
-function createAccount(data, callback){
-	// create user account.
+function UserAdd(pPass, pName, callback)
+{
+	// User add.
 	//
-	// data -- new user information.
-	//  name -- unique user name.
-	//  password -- password.
 	// callback -- callback function.
-	//  err -- error message string. if success, this is null.
+	g_socket.emit("user-add", { pass:pPass, name:pName });
+	g_socket.on("user-add-ret", function (data) {
+		callback(data.msg, null);
+	});
+}
 
-	// debug: do domething here
-	callback(null);
+
+function UserDelete(pPass, pName, callback)
+{
+	// User delete
+	//
+	// callback -- callback function.
+	g_socket.emit("user-delete", { pass:pPass, name:pName });
+	g_socket.on("user-delete-ret", function (data) {
+		callback(data.msg, null);
+	});
+}
+
+
+function UserChangeName(newName, callback)
+{
+	g_socket.emit("user-change-name", { nname:newName });
+	g_socket.on("user-change-name-ret", function (data) {
+		callback(data.msg, null);
+	});
+}
+
+
+function login(pName, pPass, callback){
+	// login.
+	//
+	// callback -- callback function.
+	//  data.status	-> 0 : err
+	//		-> 1 : success
+
+
+	g_socket.emit("user-verify", { pass:pPass, name:pName });
+	g_socket.on("user-verify-ret", function (data) {
+		if (data.status == 1) {
+			// ログイン成功
+			g_userId = data.userinfo.id;
+			g_userName = data.userinfo.name;
+		}
+
+		callback(data, null);
+	});
 }
 
 
@@ -34,7 +77,9 @@ function getUserInfo(){
 	// resunt: user information.
 
 	// debug: do something here
-	return { ID: 123, name: "username" };
+
+	// ログイン時に設定された値を返す。
+	return { ID: g_userId, name: g_userName, lat:g_lat, lng:g_lng };
 }
 
 
@@ -42,13 +87,20 @@ function updateUserInfo(data, callback){
 	// update user information.
 	//
 	// data -- new user information.
-	//  name -- new user name. if null, don't change.
-	//  password -- new password. if null, don't change.
+	//  name -- new user name.
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 
+
+	g_userId = data.userId;
+	g_lat = data.lat;
+	g_lng = data.lng;
+
+
 	// debug: do something here
-	callback(null);
+	if (callback) {
+		callback(null);
+	}
 }
 
 
@@ -57,30 +109,21 @@ function getNearBeacons(callback){
 	//
 	// callaback -- callback function.
 	//  beacons -- list of beacon information.
-	//   id -- beacon's id
-	//   place -- [latitude, longitude, altitude]
-	//   owner -- beacon owner name.
-	//   date -- beacon established date time.
-	//   type -- beacon type number.
-	//  err -- error message string. if success, this is null.
+	//   beaconId -- beacon's id
+	//   lat
+	//   lng
+	//   alt
+	//   userId -- beacon owner id.
+	//   type
+	//   timestamp -- beacon established date time.
 
-	// debug: do something here
-	//  this is for debug
-	navigator.geolocation.getCurrentPosition(function(e){
-		var near = [];
-		for(var i=0; i<10; i++){
-			near.push({
-				id: i,
-				place: [e.coords.latitude+(Math.random()*0.04-0.02), e.coords.longitude+(Math.random()*0.04-0.02), 0],
-				owner: ["this", "is", "test"][i%3],
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*7),
-				type: Math.floor(Math.random()*3)
-			});
-		}
-		callback(near, null);
-	}, function(){
-		callback(null, "failed get location");
-	});
+
+	g_socket.emit("get", { lat : g_lat, lng : g_lng });
+	if (callback) {
+		g_socket.on("get-ret", function (data) {
+			callback(data.beacons, null);
+		});
+	}
 }
 
 
@@ -88,36 +131,39 @@ function getMyBeacons(callback){
 	// get my beacons list.
 	//
 	// callback -- callback function. parameters is same as getNearBeacons.
+	//  beacons -- list of beacon information.
+	//   beaconId -- beacon's id
+	//   lat
+	//   lng
+	//   alt
+	//   userId -- beacon owner id.
+	//   type
+	//   timestamp -- beacon established date time.
 
-	// debug: do something here
-	//  this is for debug
-	navigator.geolocation.getCurrentPosition(function(e){
-		var my = [];
-		for(var i=0; i<3; i++){
-			my.push({
-				id: i+100,
-				place: [e.coords.latitude+(Math.random()*0.1-0.05), e.coords.longitude+(Math.random()*0.1-0.05), 0],
-				owner: "your name",
-				date: new Date((new Date()) - Math.random()*1000*60*60*24*30),
-				type: Math.floor(Math.random()*3)
-			});
-		}
-		callback(my, null);
-	}, function(){
-		callback(null, "failed get location");
-	});
+	g_socket.emit("get-my-beacons", {});
+	if (callback) {
+		g_socket.on("get-my-beacons-ret", function (data) {
+			callback(data.beacons, null);
+		});
+	}
 }
 
 
-function putBeacon(type, callback){
+function putBeacon(pType, callback){
 	// put beacon to now place.
 	//
 	// type -- beacon type ID.
 	// callback -- callback function..
 	//  err -- error message string. if success, this is null.
 
+
+	g_socket.emit("set", { type : pType, lat : g_lat, lng : g_lng });
+
+
 	// debug: do something here
-	callback(null);
+	if (callback) {
+		callback(null);
+	}
 }
 
 
@@ -129,13 +175,21 @@ function getBeacon(id, callback){
 	//  data -- information of beacon. this format is same as one beacon of beacons list.
 	//  err -- error message string. if success, this is null.
 
-	// debug: do something here
+
+	g_socket.emit("search", { beaconId : id });
+	if (callback) {
+		g_socket.on("search-ret", function (data) {
+			callback(data.beacon, null);
+		});
+	}
+
+/*	// debug: do something here
 	callback({
 		id: id,
 		place: [200, 400, 800],
 		owner: "user",
 		date: (new Date())
-	}, null);
+	}, null);*/
 }
 
 
@@ -147,6 +201,11 @@ function removeBeacon(id, callback){
 	// callback -- callback function.
 	//  err -- error message string. if success, this is null.
 
-	// debug: do something here
-	callback(null);
+
+	g_socket.emit("remove", { beaconId : id });
+	if (callback) {
+		g_socket.on("remove-ret", function (err) {
+			callback(err.msg, null);
+		});
+	}
 }
