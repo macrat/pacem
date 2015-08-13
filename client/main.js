@@ -233,7 +233,7 @@ function updatePosition(position){
 }
 
 function rewriteBeacons(){
-	var geo = new THREE.OctahedronGeometry(1);
+	var geo = new THREE.OctahedronGeometry(0.5);
 	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 	var fills = [
 		new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 }),
