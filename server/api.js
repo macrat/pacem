@@ -414,7 +414,7 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			var tmp = new Array();
 			db.serialize(function() {
-				db.each("SELECT Beacons.id, Users.name, lat, lng, Beacons.update_date FROM Beacons, Users WHERE Beacons.userId==Users.id", function(err, row) {
+				db.each("SELECT Beacons.id, Users.name, lat, lng, Beacons.update_date, type FROM Beacons, Users WHERE Beacons.userId==Users.id", function(err, row) {
 	//				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
 	//				tmp.push(new Beacon(row.name, row.id, row.lat, row.lng, row.alt, row.type, row.update_date));
 					tmp.push(new Beacon({
