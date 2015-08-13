@@ -147,12 +147,12 @@ function updateIndicator(position, orient){
 
 		ctx.fillStyle = "white";
 		ctx.beginPath();
-		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 4, 0, Math.PI*2, true);
+		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 5, 0, Math.PI*2, true);
 		ctx.fill();
 
-		ctx.fillStyle = "black";
+		ctx.fillStyle = ["#ff6666", "#66ff66", "#6666ff"][beacon.type];
 		ctx.beginPath();
-		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 3, 0, Math.PI*2, true);
+		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 4, 0, Math.PI*2, true);
 		ctx.fill();
 	}
 
@@ -237,7 +237,11 @@ function updatePosition(position){
 }
 
 function rewriteBeacons(){
-	var geo = new THREE.OctahedronGeometry(0.5);
+	var geos = [
+		new THREE.OctahedronGeometry(0.5),
+		new THREE.OctahedronGeometry(0.5, 1),
+		new THREE.DodecahedronGeometry(0.5)
+	];
 	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 	var fills = [
 		new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 }),
@@ -248,14 +252,14 @@ function rewriteBeacons(){
 	function putBeacon(beacon){
 		var place = beacon.place;
 
-		var mesh = new THREE.Mesh(geo, frame);
+		var mesh = new THREE.Mesh(geos[beacon.type], frame);
 		mesh.position.x = location2meter(place[0]);
 		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_models.push(mesh);
 
-		var mesh = new THREE.Mesh(geo, fills[beacon.type]);
+		var mesh = new THREE.Mesh(geos[beacon.type], fills[beacon.type]);
 		mesh.position.x = location2meter(place[0]);
 		mesh.position.z = location2meter(place[1]);
 		mesh.position.y = 0;
