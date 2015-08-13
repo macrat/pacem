@@ -3,6 +3,7 @@
 
 var g_socket;
 var g_userId = 0;
+var g_userName = "";
 // 位置情報
 var g_lat, g_lng;
 
@@ -16,14 +17,53 @@ function InitSocket(socket, connectCallback, disconnectCallback)
 }
 
 
-function login(callback){
+function UserAdd(pPass, pName, callback)
+{
+	// User add.
+	//
+	// callback -- callback function.
+	//  data.status	-> 0 : err
+	//		-> 1 : success
+	//  data.mesg -- err message.
+	g_socket.emit("user-add", { pass:pPass, name:pName });
+	g_socket.on("user-add-ret", function (data) {
+		callback(data, null);
+	});
+}
+
+
+function UserDelete(pPass, pName, callback)
+{
+	// User delete
+	//
+	// callback -- callback function.
+	//  data.status	-> 0 : err
+	//		-> 1 : success.
+	g_socket.emit("user-delete", { pass:pPass, name:pName });
+	g_socket.on("user-delete-ret", function (data) {
+		callback(data, null);
+	});
+}
+
+
+function login(pName, pPass, callback){
 	// login.
 	//
 	// callback -- callback function.
-	//  err -- error message string. if success, this is null.
+	//  data.status	-> 0 : err
+	//		-> 1 : success
 
-	// debug: do something here
-	callback(null);
+
+	g_socket.emit("user-verify", { pass:pPass, name:pName });
+	g_socket.on("user-verify-ret", function (data) {
+		if (data.status == 1) {
+			// ログイン成功
+			g_userId = data.userinfo.id;
+			g_userName = data.userinfo.name;
+		}
+
+		callback(data, null);
+	});
 }
 
 
@@ -33,7 +73,9 @@ function getUserInfo(){
 	// resunt: user information.
 
 	// debug: do something here
-	return { ID: 123, name: "username" };
+
+	// ログイン時に設定された値を返す。
+	return { ID: g_userId, name: g_userName };
 }
 
 

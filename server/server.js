@@ -28,6 +28,7 @@ if (!isExistsDb) {
 	var db = new sqlite3.Database(fileDb);
 	db.serialize(function() {
 		db.run("create table Beacons(id integer primary key, userId INTEGER, lat REAL, lng REAL, alt REAL, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
+		db.run("create table Users(id integer primary key, pass TEXT, name TEXT UNIQUE, update_date TIMESTAMP DEFAULT (DATETIME('now','localtime')));");
 	});
 	db.close();
 }
@@ -49,6 +50,16 @@ function Beacon(userId, beaconId, lat, lng, alt, timestamp)
 	this.lat = lat;
 	this.lng = lng;
 	this.alt = alt;
+	this.timestamp = timestamp;
+}
+
+
+// ユーザー情報構造体
+function UserInfo(id, pass, name, timestamp)
+{
+	this.id = id;
+	this.pass = pass;
+	this.name = name;
 	this.timestamp = timestamp;
 }
 
@@ -165,8 +176,6 @@ function doRequestSocketIo(socket)
 			io.sockets.emit("search-ret", { beacon:tmp });
 DEBUG("Beacon Searched.");
 		});
-
-		io.sockets.emit("search-ret", { status:"success" });
 	});
 
 	// あるユーザーの作成した特定のビーコンを削除する処理
@@ -188,17 +197,91 @@ DEBUG("Beacon removed.");
 	});
 
 
+	// ユーザー管理用 API
+	// ユーザー追加
+	socket.on("user-add", function(req) {
+		if (req.pass.length == 0 || req.name.length == 0) {
+DEBUG("[user-add]\tparameter is unjust.");
+			io.sockets.emit("user-add-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
 
-	// DEBUG 用
-	socket.on("get-db", function(req) {
-		DEBUG("get db");
 
 		var db = new sqlite3.Database(fileDb);
-		var tmp = new Array();
+		var emsg = "";
 		db.serialize(function() {
-			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
-//				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+			var stmt = db.prepare("INSERT INTO Users (pass, name) VALUES (?,?)");
+			// ユーザー追加
+			stmt.run(req.pass, req.name, function(err) {
+				if (err) {
+					emsg = "User name conflict.";
+				}
+			});
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				io.sockets.emit("user-add-ret", { status:0, msg:emsg });
+				return;
+			}
+
+			io.sockets.emit("user-add-ret", { status:1 });
+		});
+	});
+	// ユーザー削除
+	socket.on("user-delete", function(req) {
+		if (req.pass.length == 0 || req.name.length == 0) {
+DEBUG("[user-delete]\tparameter is unjust.");
+			io.sockets.emit("user-delete-ret", { status:0, msg:"parameter is unjust." });
+			return;
+		}
+
+
+		var db = new sqlite3.Database(fileDb);
+		var emsg = "";
+		db.serialize(function() {
+			// ユーザー削除
+			var stmt = db.prepare("DELETE FROM Users WHERE name = ? AND pass = ?");
+			stmt.run(req.name, req.pass, function(err) {
+				// TODO: 存在しないユーザーを削除してもエラーにならないのを何とかする。
+
+				if (err) {
+					emsg = "Can't delete user.";
+				}
+console.log(err);
+			});
+			stmt.finalize();
+		});
+		db.close(function(err) {
+			if (emsg.length > 0) {
+				console.error(emsg);
+				io.sockets.emit("user-delete-ret", { status:0, msg:emsg });
+				return;
+			}
+
+			io.sockets.emit("user-delete-ret", { status:1 });
+		});
+	});
+	// NAME と PASS が正しいか否かを判定
+	socket.on("user-verify", function(req) {
+		// req.id, req.pass
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new UserInfo();
+		var __pass = "";
+		db.serialize(function() {
+			db.each("SELECT * FROM Users WHERE name=?", req.name, function(err, row) {
+				if(err) {
+					console.log("error: " + err);
+				}
+				else {
+					tmp.id = row.id;
+					// tmp.pass = row.pass;
+					__pass = row.pass;
+					tmp.name = row.name;
+					tmp.timestamp = row.update_date;
+console.log(tmp);
+					return;
+				}
 			});
 		});
 		db.close(function(err) {
@@ -207,7 +290,47 @@ DEBUG("Beacon removed.");
 				return;
 			}
 
-			io.sockets.emit("get-db-ret", { db : tmp });
+
+			if (req.pass.length > 0 && __pass == req.pass) {
+				io.sockets.emit("user-verify-ret", { status:1, userinfo:tmp });
+			}
+			else {
+				io.sockets.emit("user-verify-ret", { status:0, userinfo:tmp });
+			}
+		});
+	});
+	// パスワード変更
+	socket.on("user-change-pass", function(req) {
+	});
+	// ユーザー名変更
+	socket.on("user-change-name", function(req) {
+	});
+
+
+	// DEBUG 用
+	socket.on("get-db", function(req) {
+		DEBUG("get db");
+
+		var db = new sqlite3.Database(fileDb);
+		var tmp = new Array();
+		var tmp2 = new Array();
+		db.serialize(function() {
+			db.each("SELECT id, userId,lat,lng,update_date FROM Beacons", function(err, row) {
+// console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
+				tmp.push(new Beacon(row.userId, row.id, row.lat, row.lng, row.alt, row.update_date));
+			});
+			db.each("SELECT id, pass, name, update_date FROM Users", function(err, row) {
+console.log(row.id + ": name=" + row.name + ", pass=" + row.pass + "  [" + row.update_date + "]");
+				tmp2.push(new UserInfo(row.id, row.pass, row.name, row.update_date));
+			});
+		});
+		db.close(function(err) {
+			if (err) {
+				console.error(err.message);
+				return;
+			}
+
+			io.sockets.emit("get-db-ret", { db : tmp, db2 : tmp2 });
 		});
 	});
 	return;

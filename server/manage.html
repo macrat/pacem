@@ -23,7 +23,7 @@
 	s.on("get-ret", function (data) {
 		$("#get-ret-logs").text("");
 		if (data.beacons.length == 0) {
-			$("#get-ret-logs").text("no button.");
+			$("#get-ret-logs").text("no beacon.");
 		}
 
 		for(var i=0; i< data.beacons.length; ++i) {
@@ -65,7 +65,7 @@ console.log("Search-ret:" + data.status);
 
 		$("#db-logs").text("");
 		if (data.db.length == 0) {
-			$("#db-logs").text("no button.");
+			$("#db-logs").text("no beacon.");
 		}
 
 		for(var i=0; i< data.db.length; ++i) {
@@ -74,6 +74,18 @@ console.log("Search-ret:" + data.status);
 				"lat:" + data.db[i].lat + "<br>" +
 				"lng:" + data.db[i].lng + "<br>" +
 				"timestamp:" + data.db[i].timestamp + "<br>"
+			);
+		}
+
+		if (data.db2.length > 0) {
+			$("#db-logs").append("<hr>");
+		}
+		for(var i=0; i< data.db2.length; ++i) {
+			$("#db-logs").append(
+				"UserInfo id = " + data.db2[i].id + "<br>" +
+				"NAME:" + data.db2[i].name + "<br>" +
+				"PASS:" + data.db2[i].pass + "<br>" +
+				"timestamp:" + data.db2[i].timestamp + "<br>"
 			);
 		}
 
