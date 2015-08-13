@@ -134,8 +134,8 @@ function updateIndicator(position, orient){
 
 	ctx.clearRect(0, 0, canv.width, canv.height);
 
-	for(var x in beacon_list){
-		var pos = beacon_list[x].place;
+	function putIndicator(beacon){
+		var pos = beacon.place;
 		var angle = (Math.atan2(pos[0] - position.coords.latitude, pos[1] - position.coords.longitude) - baseAngle + Math.PI*2)%(Math.PI*2);
 
 		ctx.globalAlpha = Math.min(0.9, Math.max(0, Math.abs(angle-Math.PI)/(Math.PI-fov)));
@@ -150,7 +150,14 @@ function updateIndicator(position, orient){
 		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 3, 0, Math.PI*2, true);
 		ctx.fill();
 	}
-	ctx.fill();
+
+	if(current_beacon){
+		putIndicator(current_beacon);
+	}else{
+		for(var x in beacon_list){
+			putIndicator(beacon_list[x]);
+		}
+	}
 
 	this.oldPos = position;
 	this.oldOrient = orient;
@@ -196,6 +203,7 @@ function updatePosition(position){
 		}
 
 		rewriteBeacons();
+		updateIndicator();
 	});
 
 	function down(){
