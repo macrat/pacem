@@ -189,7 +189,6 @@ function putBeacon(pType, callback){
 	//  err -- error message string. if success, this is null.
 
 	navigator.geolocation.getCurrentPosition(function(position){
-		console.log("send");
 		g_socket.emit("set", { type : pType, lat : position.coords.latitude, lng : position.coords.longitude })
 
 		function cb(data){
@@ -211,7 +210,6 @@ function getBeacon(id, callback){
 	//  data -- information of beacon. this format is same as one beacon of beacons list.
 	//  err -- error message string. if success, this is null.
 
-
 	g_socket.emit("search", { beaconId : id });
 	function cb(data){
 		g_socket.removeListener("search-ret", cb);
@@ -230,7 +228,6 @@ function removeBeacon(id, callback){
 	//  err -- error message string. if success, this is null.
 
 
-	console.log(id);
 	g_socket.emit("remove", { beaconId : id });
 	function cb(data){
 		g_socket.removeListener("remove-ret", cb);
