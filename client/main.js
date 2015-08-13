@@ -235,7 +235,11 @@ function updatePosition(position){
 function rewriteBeacons(){
 	var geo = new THREE.OctahedronGeometry(1);
 	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-	var fill = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 });
+	var fills = [
+		new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 }),
+		new THREE.MeshBasicMaterial({ color: 0x00ff00, opacity: 0.3 }),
+		new THREE.MeshBasicMaterial({ color: 0x0000ff, opacity: 0.3 }),
+	];
 
 	function putBeacon(beacon){
 		var place = beacon.place;
@@ -247,7 +251,7 @@ function rewriteBeacons(){
 		scene.add(mesh);
 		beacon_models.push(mesh);
 
-		var mesh = new THREE.Mesh(geo, fill);
+		var mesh = new THREE.Mesh(geo, fills[beacon.type]);
 		mesh.position.x = place[0] * 1519.85;
 		mesh.position.z = place[1] * 1519.85;
 		mesh.position.y = 0;

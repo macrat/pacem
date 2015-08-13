@@ -230,8 +230,21 @@ li.selected_beacon {
 	z-index: 3;
 	bottom: 4em;
 	right: .3em;
-	width: 3em;
 }
 #beaconmenu > div {
 	font-size: 200%;
+	margin: .3em .25em;
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	border: 1px solid gray;
+}
+#beaconmenu > div:nth-child(1) {
+	background-color: rgba(255, 128, 128, 0.8);
+}
+#beaconmenu > div:nth-child(2) {
+	background-color: rgba(128, 255, 128, 0.8);
+}
+#beaconmenu > div:nth-child(3) {
+	background-color: rgba(128, 128, 255, 0.8);
 }
