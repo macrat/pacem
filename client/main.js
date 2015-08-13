@@ -381,10 +381,19 @@ function guiInit(){
 	});
 
 
+	$("#username span").text(getUserInfo().name)
+
+
 	function rmBeacon(beaconid){
 		confirm("remove this beacon?", function(choice){
 			if(choice){
-				console.log("debug: beacon remove");
+				removeBeacon(beaconid, function(err){
+					if(!err){
+						showNotify("beacon removed");
+					}else{
+						showNotify("failed beacon remove<br>" + err);
+					}
+				});
 			}
 		});
 	}
