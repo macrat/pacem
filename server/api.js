@@ -68,7 +68,7 @@ module.exports = function(server){
 			var db = new sqlite3.Database(fileDb);
 			db.serialize(function() {
 				// ビーコン追加サンプル
-				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?)");
+				var stmt = db.prepare("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)");
 				stmt.run(g_userInfo.id, req.lat, req.lng, req.alt, req.type, function(err){
 					if(err){
 						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
