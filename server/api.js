@@ -62,17 +62,30 @@ module.exports = function(server){
 		socket.on("set", function(req) {
 	// DEBUG("Set Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
 			var db = new sqlite3.Database(fileDb);
+			var nearFlag = false;
 			db.serialize(function() {
-				// ビーコン追加サンプル
-				db.run("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)", user_info.id, req.lat, req.lng, req.alt, req.type, function(err){
-					if(err){
-						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
-					}else{
-						io.sockets.emit("set-ret", { status:1, msg: null });
+				db.each("SELECT * FROM Beacons WHERE ?<lat AND lat<? AND ?<lng AND lng<?", req.lat-0.01, req.lat+0.01, req.lng-0.01, req.lng+0.01, function(err, row){
+					var distance = Math.sqrt(Math.pow((row.lat-req.lat), 2) + Math.pow((row.lng-req.lng), 2))*1519.85;
+					if(!nearFlag && distance < 6 && row.userId == user_info.id){
+						io.sockets.emit("set-ret", { status: 0, msg: "too near your beacon" });
+						nearFlag = true;
+					}else if(!nearFlag && distance < 3){
+						io.sockets.emit("set-ret", { status: 0, msg: "too near other beacon" });
+						nearFlag = true;
+					}
+				}, function(err, rownum){
+					if(!nearFlag){
+						// ビーコン追加サンプル
+						db.run("INSERT INTO Beacons (userId, lat, lng, alt, type) VALUES (?,?,?,?,?)", user_info.id, req.lat, req.lng, req.alt, req.type, function(err){
+							if(err){
+								io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
+							}else{
+								io.sockets.emit("set-ret", { status:1, msg: null });
+							}
+						});
 					}
 				});
 			});
-			db.close();
 		});
 		socket.on("get-my-beacons", function(req) {
 			// ビーコン取得サンプル

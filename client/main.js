@@ -435,13 +435,17 @@ function guiInit(){
 		$("#putcancel").fadeOut("slow");
 	});
 	$("#beaconmenu div").click(function(){
-		if($("#mybeacons li:first").data("distance") < 3){
+		if($("#mybeacons li:first").data("distance") < 6){
 			showNotify("too near your beacon");
-		}else if($("#nearbeacons li:first").data("distance") < 1){
+		}else if($("#nearbeacons li:first").data("distance") < 3){
 			showNotify("too near other beacon");
 		}else{
-			putBeacon($(this).data("type"), function(){
-				showNotify("put beacon here");
+			putBeacon($(this).data("type"), function(err){
+				if(err){
+					showNotify("put beacon failed<br>" + err);
+				}else{
+					showNotify("put beacon here");
+				}
 				updateBeacons();
 			});
 		}
