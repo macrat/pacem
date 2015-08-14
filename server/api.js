@@ -383,17 +383,24 @@ module.exports = function(server){
 			// ビーコン取得サンプル
 			var db = new sqlite3.Database(fileDb);
 			var tmp = new Array();
+			var errorFlag = false;
 			db.serialize(function() {
 				db.each("SELECT Beacons.id, Users.name, lat, lng, Beacons.update_date, type FROM Beacons, Users WHERE Beacons.userId==Users.id", function(err, row) {
 	//				console.log(row.id + ": " + row.userId + "[" + row.lat + "," + row.lng + "," + row.alt + "]" + row.update_date);
-					tmp.push(new Beacon({
-						beaconId : row.id,
-						lat : row.lat,
-						lng : row.lng,
-						alt : row.alt,
-						type : row.type,
-						timestamp : row.update_date,
-						username:row.name}));
+					if(err){
+						console.log(err);
+						io.sockets.emit("get-ret", { status:0, msg: "internal server error" });
+						errorFlag = true;
+					}else{
+						tmp.push(new Beacon({
+							beaconId : row.id,
+							lat : row.lat,
+							lng : row.lng,
+							alt : row.alt,
+							type : row.type,
+							timestamp : row.update_date,
+							username:row.name}));
+					}
 				}, function(err){
 					if (err) {
 						console.log(err);
@@ -402,6 +409,9 @@ module.exports = function(server){
 				});
 			});
 			db.close(function(err) {
+				if(errorFlag){
+					return;
+				}
 				if (err) {
 					console.error(err.message);
 					io.sockets.emit("get-ret", { status:0, msg:err.message });
