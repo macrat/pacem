@@ -64,6 +64,12 @@ function login(userid, password, callback){
 			g_userId = data.userinfo.id;
 			g_userName = data.userinfo.name;
 
+			function autoReLogin(){
+				login(userid, password, function(e){});
+			}
+			g_socket.removeListener("connect", autoReLogin);
+			g_socket.on("connect", autoReLogin);
+
 			callback(null);
 		}else{
 			callback(data.msg);
