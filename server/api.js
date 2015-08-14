@@ -61,10 +61,21 @@ module.exports = function(server){
 		// 位置情報のセット
 		socket.on("set", function(req) {
 	// DEBUG("Set Beacon info\nlat : " + req.lat + "\nlng : " + req.lng + "\n");
+			if(req.type == undefined || req.lat == undefined || req.lng == undefined){
+				io.sockets.emit("set-ret", { status: 0, msg: "incorrect arguments" });
+				return;
+			}
+
 			var db = new sqlite3.Database(fileDb);
 			var nearFlag = false;
 			db.serialize(function() {
 				db.each("SELECT * FROM Beacons WHERE ?<lat AND lat<? AND ?<lng AND lng<?", req.lat-0.01, req.lat+0.01, req.lng-0.01, req.lng+0.01, function(err, row){
+					if(err){
+						console.log(err);
+						io.sockets.emit("set-ret", { status: 0, msg: "internal server error" });
+						nearFlag = true;
+					}
+
 					var distance = Math.sqrt(Math.pow((row.lat-req.lat), 2) + Math.pow((row.lng-req.lng), 2)) * (40000000/360);
 					if(!nearFlag && distance < 6 && row.userId == user_info.id){
 						io.sockets.emit("set-ret", { status: 0, msg: "too near your beacon" });
