@@ -285,11 +285,13 @@ function rewriteBeacons(){
 		var mesh = new THREE.Mesh(geos[beacon.type], frame);
 		mesh.position.set(x, z, y);
 		scene.add(mesh);
+		beacon_list[beacon.id].frame_model = mesh;
 		beacon_models.push(mesh);
 
 		var mesh = new THREE.Mesh(geos[beacon.type], fills[beacon.type]);
 		mesh.position.set(x, z, y);
 		scene.add(mesh);
+		beacon_list[beacon.id].fill_model = mesh;
 		beacon_models.push(mesh);
 	}
 
@@ -622,6 +624,11 @@ function guiInit(){
 				removeBeacon(beaconid, function(err){
 					if(!err){
 						showNotify("beacon removed");
+						$("#nearbeacons li[data-id=" + beaconid + "]").remove();
+						scene.remove(beacon_list[beaconid].frame_model);
+						scene.remove(beacon_list[beaconid].fill_model);
+						delete beacon_list[beaconid];
+						renderer.render(scene, camera);
 						updateBeacons();
 					}else{
 						showNotify("failed beacon remove<br>" + err);
