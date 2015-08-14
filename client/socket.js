@@ -127,7 +127,7 @@ function getNearBeacons(callback){
 	//   type -- beacon type number.
 	//  err -- error message string. if success, this is null.
 
-	navigator.geolocation.getCurrentPosition(function(position){
+	getPosition(function(position){
 		g_socket.emit("get", { lat : position.coords.latitude, lng : position.coords.longitude });
 		function cb(data) {
 			g_socket.removeListener("get-ret", cb);
@@ -150,8 +150,6 @@ function getNearBeacons(callback){
 			callback(ls, data.msg);
 		}
 		g_socket.on("get-ret", cb);
-	}, function(err){
-		callback(null, "failed get location");
 	});
 }
 
@@ -194,7 +192,7 @@ function putBeacon(pType, callback){
 	// callback -- callback function..
 	//  err -- error message string. if success, this is null.
 
-	navigator.geolocation.getCurrentPosition(function(position){
+	getPosition(function(position){
 		g_socket.emit("set", { type : pType, lat : position.coords.latitude, lng : position.coords.longitude })
 
 		function cb(data){
@@ -202,8 +200,6 @@ function putBeacon(pType, callback){
 			callback(data.msg);
 		}
 		g_socket.on("set-ret", cb);
-	}, function(err){
-		callback("failed get position");
 	});
 }
 

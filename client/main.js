@@ -132,52 +132,47 @@ function cameraInit(){
 	});
 }
 
-function updateIndicator(position, orient){
-	if(!position){
-		position = this.oldPos;
-		if(!position){
-			navigator.geolocation.getCurrentPosition(updateIndicator);
-		}
-	}
+function updateIndicator(orient){
 	if(!orient){
 		orient = this.oldOrient;
 	}
 
-	var canv = $("#direction_indicator")[0];
-	var ctx = canv.getContext("2d");
-	var indicator_size = Math.min(canv.width, canv.height)*0.45;
+	getPosition(function(position){
+		var canv = $("#direction_indicator")[0];
+		var ctx = canv.getContext("2d");
+		var indicator_size = Math.min(canv.width, canv.height)*0.45;
 
-	var baseAngle = orient ? orient.alpha/180*Math.PI : 0;
-	var fov = camera.fov/180*Math.PI;
+		var baseAngle = orient ? orient.alpha/180*Math.PI : 0;
+		var fov = camera.fov/180*Math.PI;
 
-	ctx.clearRect(0, 0, canv.width, canv.height);
+		ctx.clearRect(0, 0, canv.width, canv.height);
 
-	function putIndicator(beacon){
-		var pos = beacon.place;
-		var angle = (Math.atan2(pos[0] - position.coords.latitude, pos[1] - position.coords.longitude) - baseAngle + Math.PI*2)%(Math.PI*2);
+		function putIndicator(beacon){
+			var pos = beacon.place;
+			var angle = (Math.atan2(pos[0] - position.coords.latitude, pos[1] - position.coords.longitude) - baseAngle + Math.PI*2)%(Math.PI*2);
 
-		ctx.globalAlpha = Math.min(0.9, Math.max(0, Math.abs(angle-Math.PI)/(Math.PI-fov)));
+			ctx.globalAlpha = Math.min(0.9, Math.max(0, Math.abs(angle-Math.PI)/(Math.PI-fov)));
 
-		ctx.fillStyle = "white";
-		ctx.beginPath();
-		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 5, 0, Math.PI*2, true);
-		ctx.fill();
+			ctx.fillStyle = "white";
+			ctx.beginPath();
+			ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 5, 0, Math.PI*2, true);
+			ctx.fill();
 
-		ctx.fillStyle = ["#ff6666", "#66ff66", "#6666ff"][beacon.type];
-		ctx.beginPath();
-		ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 4, 0, Math.PI*2, true);
-		ctx.fill();
-	}
-
-	if(current_beacon){
-		putIndicator(current_beacon);
-	}else{
-		for(var x in beacon_list){
-			putIndicator(beacon_list[x]);
+			ctx.fillStyle = ["#ff6666", "#66ff66", "#6666ff"][beacon.type];
+			ctx.beginPath();
+			ctx.arc(canv.width/2 + Math.sin(angle)*indicator_size, canv.height/2 + Math.cos(angle)*indicator_size, 4, 0, Math.PI*2, true);
+			ctx.fill();
 		}
-	}
 
-	this.oldPos = position;
+		if(current_beacon){
+			putIndicator(current_beacon);
+		}else{
+			for(var x in beacon_list){
+				putIndicator(beacon_list[x]);
+			}
+		}
+	});
+
 	this.oldOrient = orient;
 }
 
@@ -224,44 +219,37 @@ function setBeaconsListEventListener(){
 		.mouseup(up)
 }
 
-function calcDistances(position){
-	if(!position){
-		position = this.oldPos;
-		if(!position){
-			navigator.geolocation.getCurrentPosition(calcDistances);
-		}
-	}
+function calcDistances(){
+	getPosition(function(position){
+		$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
+			if($(x).parent().parent().attr("id") == "mybeacons"){
+				var pos = mybeacon_list[x.dataset.id].place;
+			}else{
+				var pos = beacon_list[x.dataset.id].place;
+			}
+			var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
 
-	$("#nearbeacons li, #mybeacons li").toArray().forEach(function(x){
-		if($(x).parent().parent().attr("id") == "mybeacons"){
-			var pos = mybeacon_list[x.dataset.id].place;
-		}else{
-			var pos = beacon_list[x.dataset.id].place;
-		}
-		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
+			$(".distance", x).text(m2km(distance));
+			$(x).attr("data-distance", distance)
+		});
 
-		$(".distance", x).text(m2km(distance));
-		$(x).attr("data-distance", distance)
+		$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+		$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
+
+		setBeaconsListEventListener();
 	});
-
-	$("#nearbeacons ul").html($("#nearbeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
-
-	$("#mybeacons ul").html($("#mybeacons li").toArray().sort(function(a,b){ return $(a).data("distance") - $(b).data("distance"); }));
-
-	setBeaconsListEventListener();
-
-	this.oldPos = position;
 }
 
-function updatePosition(position){
-	camera.position.x = location2meter(position.coords.latitude);
-	camera.position.z = location2meter(position.coords.longitude);
-	camera.position.y = 1;
+function updatePosition(){
+	getPosition(function(position){
+		camera.position.x = location2meter(position.coords.latitude);
+		camera.position.z = location2meter(position.coords.longitude);
+		camera.position.y = 1;
 
-	calcDistances();
-	updateIndicator(position, null);
-
-	this.oldPos = position;
+		calcDistances();
+		updateIndicator();
+	});
 }
 
 function rewriteBeacons(){
@@ -393,7 +381,9 @@ function threeInit(){
 		renderer.render(scene, camera);
 	})();
 
-	navigator.geolocation.watchPosition(updatePosition, function(err){
+	addLocationUpdatedHandler(updatePosition);
+
+	addGeopositionErrorHandler(function(err){
 		$("#account").animate({ opacity: 0 });
 		if(err.code == 1){
 			changeMessage("couldn't get location data<br>please check settings");
@@ -411,7 +401,7 @@ function threeInit(){
 			var indicator = $("#direction_indicator")[0];
 			indicator.width = window.innerWidth;
 			indicator.height = window.innerHeight;
-			updateIndicator(null, null);
+			updateIndicator();
 
 			$("#menucontent").css("height", $("#sidemenu").innerHeight() - Number($("#sidemenu").css("padding").slice(0, -2))*2 - $("#menuheader").outerHeight());
 		});
@@ -620,7 +610,7 @@ function guiInit(){
 
 
 	window.addEventListener('deviceorientation', function(event) {
-		  updateIndicator(null, event);
+		  updateIndicator(event);
 	});
 
 
@@ -680,7 +670,7 @@ $(function(){
 	threeInit();
 	guiInit();
 
-	setInterval(updateBeacons, 10000);
+	addLocationUpdatedHandler(updateBeacons);
 	updateBeacons();
 	addConnectListener(function(){
 		if(currentMessage() == "disconnect"){
