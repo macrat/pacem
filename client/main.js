@@ -4,7 +4,6 @@ var beacon_models = [];
 var mybeacon_list = {};
 var current_beacon = null;
 
-
 function location2meter(x){
 	return x * (40000000/360);
 }
@@ -18,7 +17,6 @@ function m2km(x){
 		return Math.round(x/1000) + "km"
 	}
 }
-
 
 function changeMessage(message){
 	var dest = $("#message");
@@ -48,7 +46,6 @@ function currentMessage(){
 	return $("#message").html();
 }
 
-
 function showNotify(message){
 	$("#notify").append("<div>" + message + "</div>");
 
@@ -62,7 +59,6 @@ function showNotify(message){
 			}, 3000);
 		})
 }
-
 
 var __confirm_callback = null;
 function confirm(message, callback){
@@ -87,12 +83,8 @@ function confirm_callback(choice){
 			}
 		})
 
-	if(__confirm_callback){
-		__confirm_callback(choice);
-		__confirm_callback = null;
-	}
+	__confirm_callback(choice);
 }
-
 
 function cameraInit(){
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
@@ -139,7 +131,6 @@ function cameraInit(){
 		openFailed("this device hasn't out camera");
 	});
 }
-
 
 function updateIndicator(position, orient){
 	if(!position){
@@ -211,7 +202,7 @@ function setBeaconsListEventListener(){
 		updateIndicator();
 	});
 
-	function holdStart(){
+	function down(){
 		if($(".holded_beacon").length == 0){
 			$(this)
 				.addClass("holded_beacon")
@@ -219,7 +210,7 @@ function setBeaconsListEventListener(){
 				.data("holdstart", (new Date()))
 		}
 	}
-	function holdEnd(){
+	function up(){
 		$(".holded_beacon").removeClass("holded_beacon");
 		$("#mybeacons li").css({
 			backgroundColor: "",
@@ -227,10 +218,10 @@ function setBeaconsListEventListener(){
 		});
 	}
 	$("#mybeacons li")
-		.bind("touchstart", holdStart)
-		.mousedown(holdStart)
-		.bind("touchend", holdEnd)
-		.mouseup(holdEnd)
+		.bind("touchstart", down)
+		.mousedown(down)
+		.bind("touchend", up)
+		.mouseup(up)
 }
 
 function calcDistances(position){
@@ -238,7 +229,6 @@ function calcDistances(position){
 		position = this.oldPos;
 		if(!position){
 			navigator.geolocation.getCurrentPosition(calcDistances);
-			return;
 		}
 	}
 
@@ -280,26 +270,28 @@ function rewriteBeacons(){
 		new THREE.OctahedronGeometry(0.5, 1),
 		new THREE.DodecahedronGeometry(0.5)
 	];
+	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 	var fills = [
 		new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3 }),
 		new THREE.MeshBasicMaterial({ color: 0x00ff00, opacity: 0.3 }),
 		new THREE.MeshBasicMaterial({ color: 0x0000ff, opacity: 0.3 }),
 	];
-	var frame = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 
 	function putBeacon(beacon){
-		var x = location2meter(beacon.place[0]);
-		var z = location2meter(beacon.place[1]);
-		var y = 0;
+		var place = beacon.place;
 
 		var mesh = new THREE.Mesh(geos[beacon.type], frame);
-		mesh.position.set(x, z, y);
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
+		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_list[beacon.id].frame_model = mesh;
 		beacon_models.push(mesh);
 
 		var mesh = new THREE.Mesh(geos[beacon.type], fills[beacon.type]);
-		mesh.position.set(x, z, y);
+		mesh.position.x = location2meter(place[0]);
+		mesh.position.z = location2meter(place[1]);
+		mesh.position.y = 0;
 		scene.add(mesh);
 		beacon_list[beacon.id].fill_model = mesh;
 		beacon_models.push(mesh);
@@ -336,6 +328,10 @@ function updateBeacons(){
 			beacon_list = {};
 
 			$("#nearbeacons ul").html("");
+
+			beacon_models.forEach(function(model){
+				scene.remove(model);
+			});
 
 			beacons.forEach(function(beacon){
 				beacon_list[beacon.id] = beacon;
@@ -406,7 +402,7 @@ function threeInit(){
 		}
 	});
 
-	window.addEventListener("resize", function(){
+	window.addEventListener('resize', function(){
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 
@@ -623,7 +619,7 @@ function guiInit(){
 	});
 
 
-	window.addEventListener("deviceorientation", function(event) {
+	window.addEventListener('deviceorientation', function(event) {
 		  updateIndicator(null, event);
 	});
 
