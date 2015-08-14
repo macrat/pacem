@@ -6,7 +6,17 @@ var current_beacon = null;
 
 
 function location2meter(x){
-	return x * 1519.85;
+	return x * (40000000/360);
+}
+
+function m2km(x){
+	if(x < 1000){
+		return Math.round(x) + "m";
+	}else if(x < 10000){
+		return Math.round(x/100)/10 + "km";
+	}else{
+		return Math.round(x/1000) + "km"
+	}
 }
 
 
@@ -240,7 +250,7 @@ function calcDistances(position){
 		}
 		var distance = location2meter(Math.sqrt(Math.pow((pos[0]-position.coords.latitude), 2) + Math.pow((pos[1]-position.coords.longitude), 2)));
 
-		$(".distance", x).text(Math.round(distance) + "m");
+		$(".distance", x).text(m2km(distance));
 		$(x).attr("data-distance", distance)
 	});
 

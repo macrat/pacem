@@ -65,7 +65,7 @@ module.exports = function(server){
 			var nearFlag = false;
 			db.serialize(function() {
 				db.each("SELECT * FROM Beacons WHERE ?<lat AND lat<? AND ?<lng AND lng<?", req.lat-0.01, req.lat+0.01, req.lng-0.01, req.lng+0.01, function(err, row){
-					var distance = Math.sqrt(Math.pow((row.lat-req.lat), 2) + Math.pow((row.lng-req.lng), 2))*1519.85;
+					var distance = Math.sqrt(Math.pow((row.lat-req.lat), 2) + Math.pow((row.lng-req.lng), 2)) * (40000000/360);
 					if(!nearFlag && distance < 6 && row.userId == user_info.id){
 						io.sockets.emit("set-ret", { status: 0, msg: "too near your beacon" });
 						nearFlag = true;
